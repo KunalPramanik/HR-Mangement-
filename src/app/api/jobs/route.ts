@@ -10,7 +10,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const includeDrafts = searchParams.get('includeDrafts') === 'true';
 
-        let query: any = { status: 'Open' };
+        let query: { status?: string } = { status: 'Open' };
         if (includeDrafts) {
             const session = await getServerSession(authOptions);
             if (session && ['hr', 'admin', 'director'].includes(session.user.role)) {
