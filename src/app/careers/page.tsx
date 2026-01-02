@@ -35,22 +35,7 @@ export default function CareersPage() {
         fetchJobs();
     }, []);
 
-    if (session?.user?.role === 'intern') {
-        return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4">
-                <div className="text-center max-w-md">
-                    <div className="bg-orange-100 text-orange-600 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
-                        <span className="material-symbols-outlined text-5xl">lock_person</span>
-                    </div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Access Restricted</h1>
-                    <p className="text-slate-500 mb-6">The Careers & Referral portal is available to full-time employees only.</p>
-                    <Link href="/dashboard" className="bg-[#135bec] text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-blue-700 transition-all">
-                        Back to Dashboard
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+
 
     const fetchJobs = async () => {
         try {
@@ -142,12 +127,14 @@ export default function CareersPage() {
                                                 <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">schedule</span> {job.type}</span>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => setReferModal({ open: true, job })}
-                                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md transition-colors flex items-center gap-2"
-                                        >
-                                            <span className="material-symbols-outlined text-[18px]">person_add</span> Refer Friend
-                                        </button>
+                                        {session?.user?.role !== 'intern' && (
+                                            <button
+                                                onClick={() => setReferModal({ open: true, job })}
+                                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md transition-colors flex items-center gap-2"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">person_add</span> Refer Friend
+                                            </button>
+                                        )}
                                     </div>
                                     <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2">{job.description}</p>
                                 </div>

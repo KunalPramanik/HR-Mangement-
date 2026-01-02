@@ -13,6 +13,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        if (session.user.role === 'intern') {
+            return NextResponse.json({ error: 'Interns are not allowed to refer candidates.' }, { status: 403 });
+        }
+
         const body = await request.json();
 
         if (!body.jobId || !body.candidateName || !body.candidateEmail) {
