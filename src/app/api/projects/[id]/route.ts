@@ -18,8 +18,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
         return NextResponse.json(project);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -43,8 +44,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
         return NextResponse.json(project);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -65,7 +67,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         await Project.findByIdAndDelete(params.id);
 
         return NextResponse.json({ message: 'Project deleted' });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

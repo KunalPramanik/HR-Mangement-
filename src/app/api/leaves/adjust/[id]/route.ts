@@ -75,8 +75,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         await adjustment.save();
         return NextResponse.json(adjustment);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Adjustment Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

@@ -24,8 +24,9 @@ export async function GET(req: Request) {
             .sort({ month: -1 });
 
         return NextResponse.json(payslips);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -116,8 +117,9 @@ export async function POST(req: Request) {
                         const newPayslip = await Payslip.create(payslipData);
                         generated.push(newPayslip);
                     }
-                } catch (err: any) {
-                    errors.push({ userId: emp._id, error: err.message });
+                } catch (err: unknown) {
+                    const errMsg = err instanceof Error ? err.message : String(err);
+                    errors.push({ userId: emp._id, error: errMsg });
                 }
             }
 
@@ -130,7 +132,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

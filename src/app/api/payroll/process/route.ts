@@ -181,12 +181,13 @@ export async function POST(req: Request) {
                     status: 'Success'
                 });
 
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error(`Payroll Error for ${emp.email}:`, err);
+                const errMsg = err instanceof Error ? err.message : String(err);
                 results.errors++;
                 results.details.push({
                     name: `${emp.firstName} ${emp.lastName}`,
-                    error: err.message,
+                    error: errMsg,
                     status: 'Failed'
                 });
             }
@@ -194,8 +195,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, results });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Payroll Process Fatal:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

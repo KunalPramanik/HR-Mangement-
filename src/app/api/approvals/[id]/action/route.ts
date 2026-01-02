@@ -87,8 +87,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 

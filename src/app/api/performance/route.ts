@@ -18,8 +18,9 @@ export async function GET() {
             .sort({ createdAt: -1 });
 
         return NextResponse.json(reviews);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -73,7 +74,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json(review);
 
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

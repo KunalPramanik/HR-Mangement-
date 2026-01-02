@@ -27,8 +27,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         }
 
         return NextResponse.json(updatedJob);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -48,7 +49,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         }
 
         return NextResponse.json({ message: 'Job deleted successfully' });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

@@ -149,8 +149,9 @@ export async function GET() {
             credentials: { password: 'password123' }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Seed error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

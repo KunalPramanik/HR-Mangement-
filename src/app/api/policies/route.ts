@@ -9,8 +9,9 @@ export async function GET() {
         await dbConnect();
         const policies = await Policy.find({ active: true }).sort({ category: 1, title: 1 });
         return NextResponse.json(policies);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -25,7 +26,8 @@ export async function POST(request: Request) {
         const data = await request.json();
         const policy = await Policy.create(data);
         return NextResponse.json(policy, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

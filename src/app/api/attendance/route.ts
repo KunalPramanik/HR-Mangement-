@@ -178,18 +178,17 @@ export async function POST(req: Request) {
                     geo: attendance.geo,
                     time: attendance.clockIn
                 });
-            } catch (err: any) {
-                // Handle Duplicate Key Error (Race Condition)
-                if (err.code === 11000) {
+            } catch (err: unknown) {
+                const anyErr = err as any;
+                if (anyErr && anyErr.code === 11000) {
                     return NextResponse.json({
                         error: 'Attendance already exists for today (Race execution blocked).',
                         currentState: 'IN_PROGRESS'
                     }, { status: 409 });
                 }
 
-                // ROLLBACK
                 await Attendance.deleteOne({ _id: attendance._id });
-                throw err; // Propagate 500
+                throw err;
             }
 
             return NextResponse.json({
@@ -318,8 +317,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Attendance System Error:', error);
-        return NextResponse.json({ error: error.message || 'System Failure' }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message || 'System Failure' }, { status: 500 });
     }
 }

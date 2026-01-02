@@ -9,8 +9,9 @@ export async function GET() {
         await dbConnect();
         const holidays = await Holiday.find({}).sort({ date: 1 });
         return NextResponse.json(holidays);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -25,8 +26,9 @@ export async function POST(request: Request) {
         const data = await request.json();
         const holiday = await Holiday.create(data);
         return NextResponse.json(holiday, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -53,8 +55,9 @@ export async function PUT(request: Request) {
         }
 
         return NextResponse.json({ message: `Seeded ${count} holidays` });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -73,7 +76,8 @@ export async function DELETE(request: Request) {
 
         await Holiday.findByIdAndDelete(id);
         return NextResponse.json({ message: 'Deleted' });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

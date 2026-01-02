@@ -17,8 +17,9 @@ export async function GET(request: Request) {
             .populate('toUserId', 'firstName lastName profilePicture role position');
 
         return NextResponse.json(kudos);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -53,7 +54,8 @@ export async function POST(request: Request) {
         await newKudos.populate('toUserId', 'firstName lastName profilePicture');
 
         return NextResponse.json(newKudos, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

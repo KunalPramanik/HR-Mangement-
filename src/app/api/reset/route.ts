@@ -26,8 +26,9 @@ export async function DELETE() {
         await Notification.deleteMany({});
 
         return NextResponse.json({ message: 'All system data has been wiped successfully.' });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Reset failed:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
