@@ -5,7 +5,7 @@ export interface ITicket extends Document {
     userId: mongoose.Types.ObjectId;
     subject: string;
     description: string;
-    category: 'technical' | 'hr' | 'payroll' | 'leave' | 'benefits' | 'other';
+    category: 'technical' | 'hr' | 'payroll' | 'leave' | 'benefits' | 'facilities' | 'other';
     priority: 'low' | 'medium' | 'high' | 'urgent';
     status: 'open' | 'in-progress' | 'resolved' | 'closed';
     assignedTo?: mongoose.Types.ObjectId;
@@ -43,7 +43,7 @@ const TicketSchema = new Schema<ITicket>(
         },
         category: {
             type: String,
-            enum: ['technical', 'hr', 'payroll', 'leave', 'benefits', 'other'],
+            enum: ['technical', 'hr', 'payroll', 'leave', 'benefits', 'facilities', 'other'],
             required: true,
         },
         priority: {

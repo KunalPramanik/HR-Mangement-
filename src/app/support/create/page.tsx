@@ -61,6 +61,7 @@ export default function CreateTicketPage() {
                         <option value="facilities">Facilities</option>
                         <option value="payroll">Payroll Discrepancy</option>
                         <option value="leave">Leave & Attendance</option>
+                        <option value="benefits">Benefits</option>
                         <option value="other">Other</option>
                     </select>
                 </label>
@@ -125,6 +126,18 @@ export default function CreateTicketPage() {
                             />
                             <span className="text-sm">High</span>
                         </label>
+
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="priority"
+                                value="urgent"
+                                checked={formData.priority === 'urgent'}
+                                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                                className="text-[#135bec] focus:ring-[#135bec]"
+                            />
+                            <span className="text-sm">Urgent</span>
+                        </label>
                     </div>
                 </div>
 
@@ -135,7 +148,7 @@ export default function CreateTicketPage() {
                 >
                     {loading ? 'Submitting...' : 'Submit Ticket'}
                 </button>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }
