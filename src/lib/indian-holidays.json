@@ -1,0 +1,74 @@
+[
+    {
+        "name": "Republic Day",
+        "date": "2025-01-26",
+        "type": "public",
+        "description": "National Holiday"
+    },
+    {
+        "name": "Holi",
+        "date": "2025-03-14",
+        "type": "public",
+        "description": "Festival of Colors"
+    },
+    {
+        "name": "Good Friday",
+        "date": "2025-04-18",
+        "type": "public",
+        "description": "Religious Holiday"
+    },
+    {
+        "name": "Eid-ul-Fitr",
+        "date": "2025-03-31",
+        "type": "public",
+        "description": "Religious Holiday"
+    },
+    {
+        "name": "Independence Day",
+        "date": "2025-08-15",
+        "type": "public",
+        "description": "National Holiday"
+    },
+    {
+        "name": "Raksha Bandhan",
+        "date": "2025-08-09",
+        "type": "public",
+        "description": "Festival"
+    },
+    {
+        "name": "Janmashtami",
+        "date": "2025-08-16",
+        "type": "public",
+        "description": "Religious Holiday"
+    },
+    {
+        "name": "Gandhi Jayanti",
+        "date": "2025-10-02",
+        "type": "public",
+        "description": "National Holiday"
+    },
+    {
+        "name": "Dussehra",
+        "date": "2025-10-02",
+        "type": "public",
+        "description": "Festival"
+    },
+    {
+        "name": "Diwali",
+        "date": "2025-10-20",
+        "type": "public",
+        "description": "Festival of Lights"
+    },
+    {
+        "name": "Guru Nanak Jayanti",
+        "date": "2025-11-05",
+        "type": "public",
+        "description": "Religious Holiday"
+    },
+    {
+        "name": "Christmas",
+        "date": "2025-12-25",
+        "type": "public",
+        "description": "Religious Holiday"
+    }
+]
