@@ -57,6 +57,7 @@ export async function POST(request: Request) {
             title: 'New Job Opening',
             message: `A new position for ${newJob.title} (${newJob.department}) has been posted. Refer someone today!`,
             type: 'info',
+            link: '/careers',
             read: false
         }));
 
