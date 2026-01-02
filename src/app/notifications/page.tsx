@@ -71,19 +71,24 @@ export default function NotificationsPage() {
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {notifications.map((notif) => (
-                        <div
-                            key={notif._id}
-                            onClick={() => notif.link && router.push(notif.link)}
-                            className={`p-4 rounded-xl shadow-sm border ${notif.read ? 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700' : 'bg-blue-50 dark:bg-slate-800 border-blue-100 dark:border-blue-900/50'} ${notif.link ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-                        >
-                            <div className="flex justify-between items-start mb-1">
-                                <h3 className={`font-bold ${notif.read ? 'text-slate-900 dark:text-white' : 'text-[#135bec]'}`}>{notif.title}</h3>
-                                <span className="text-xs text-slate-400">{formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}</span>
+                    {notifications.map((notif) => {
+                        // Fallback: If title mentions New Job, go to careers if no specific link
+                        const targetLink = notif.link || (notif.title.includes('New Job') ? '/careers' : null);
+
+                        return (
+                            <div
+                                key={notif._id}
+                                onClick={() => targetLink && router.push(targetLink)}
+                                className={`p-4 rounded-xl shadow-sm border ${notif.read ? 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700' : 'bg-blue-50 dark:bg-slate-800 border-blue-100 dark:border-blue-900/50'} ${targetLink ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+                            >
+                                <div className="flex justify-between items-start mb-1">
+                                    <h3 className={`font-bold ${notif.read ? 'text-slate-900 dark:text-white' : 'text-[#135bec]'}`}>{notif.title}</h3>
+                                    <span className="text-xs text-slate-400">{formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}</span>
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300">{notif.message}</p>
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-300">{notif.message}</p>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

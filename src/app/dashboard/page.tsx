@@ -13,16 +13,14 @@ export default function DashboardPage() {
 
     // Mock Notification Check (or fetch if API exists)
     useEffect(() => {
-        // Checking locally or via API
-        // For demonstration of "Blink", we'll set it to > 0 after a timeout or try to fetch
         const checkNotifications = async () => {
             try {
-                // Assuming an endpoint exists, or we mock it. 
-                // Let's assume there are always unread notifications for now to show the feature
-                // In prod: const res = await fetch('/api/notifications/unread');
-                // const data = await res.json();
-                // setUnreadCount(data.count);
-                setUnreadCount(3); // Mocking 3 unread
+                const res = await fetch('/api/notifications');
+                if (res.ok) {
+                    const data: any[] = await res.json();
+                    const unread = data.filter(n => !n.read).length;
+                    setUnreadCount(unread);
+                }
             } catch (e) { console.error(e); }
         };
         checkNotifications();
