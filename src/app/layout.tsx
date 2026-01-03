@@ -6,6 +6,10 @@ import AppShell from "@/components/AppShell";
 export const metadata: Metadata = {
   title: "Mindstar HR Portal",
   description: "Employee management and HR portal for Mindstar Technology",
+  manifest: "/manifest.json",
+  icons: { apple: "/icons/icon-192x192.png" },
+  themeColor: "#135bec",
+  viewport: "minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover",
 };
 
 export default function RootLayout({
