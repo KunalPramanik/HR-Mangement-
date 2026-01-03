@@ -84,6 +84,8 @@ export interface IUser extends Document {
         esicNum: string;
         pfEnabled: boolean;
     };
+    webauthnLoginToken?: string;
+    webauthnLoginExpires?: Date;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -229,7 +231,9 @@ const UserSchema = new Schema<IUser>(
             uan: { type: String, default: '' },
             esicNum: { type: String, default: '' },
             pfEnabled: { type: Boolean, default: true }
-        }
+        },
+        webauthnLoginToken: { type: String, select: false },
+        webauthnLoginExpires: { type: Date, select: false },
     },
     {
         timestamps: true,

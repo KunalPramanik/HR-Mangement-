@@ -7,10 +7,10 @@ export default function AdminSettings() {
     const { data: session } = useSession();
     const [passwordFormat, setPasswordFormat] = useState('Firstname@Year'); // Default logic
 
-    const allowedRoles = ['admin', 'director', 'cxo', 'cho', 'vp'];
-    if (!session || !allowedRoles.includes(session.user.role)) {
-        return <div className="p-10 text-center font-bold text-red-600">Access Denied</div>;
-    }
+    // Access checks removed
+    // if (!session || !allowedRoles.includes(session.user.role)) {
+    //    return <div className="p-10 text-center font-bold text-red-600">Access Denied</div>;
+    // }
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 pb-24">

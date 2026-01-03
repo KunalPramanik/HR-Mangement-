@@ -11,13 +11,42 @@ export const authOptions: NextAuthOptions = {
             credentials: {
                 emailOrEmployeeId: { label: 'Email or Employee ID', type: 'text' },
                 password: { label: 'Password', type: 'password' },
+                token: { label: 'Token', type: 'text' },
+                type: { label: 'Type', type: 'text' }
             },
             async authorize(credentials) {
+                await dbConnect();
+
+                // 1. WebAuthn Token Login
+                if (credentials?.token && credentials?.type === 'webauthn') {
+                    const user = await User.findOne({
+                        webauthnLoginToken: credentials.token,
+                        webauthnLoginExpires: { $gt: new Date() }
+                    });
+
+                    if (!user) throw new Error('Invalid or expired biometric session.');
+
+                    // Clear token
+                    user.webauthnLoginToken = undefined;
+                    user.webauthnLoginExpires = undefined;
+                    await user.save();
+
+                    return {
+                        id: user._id.toString(),
+                        email: user.email,
+                        name: `${user.firstName} ${user.lastName}`,
+                        role: user.role,
+                        employeeId: user.employeeId,
+                        department: user.department,
+                        position: user.position,
+                        profilePicture: user.profilePicture,
+                    };
+                }
+
+                // 2. Standard Password Login
                 if (!credentials?.emailOrEmployeeId || !credentials?.password) {
                     throw new Error('Please enter your credentials');
                 }
-
-                await dbConnect();
 
                 // Find user by email or employee ID
                 const user = await User.findOne({

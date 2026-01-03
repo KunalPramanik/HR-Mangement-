@@ -152,7 +152,65 @@ export default function LoginPage() {
                     <p className="text-slate-500 text-xs font-medium">Or sign in with</p>
                     <button
                         type="button"
-                        onClick={() => alert('Biometric login is not configured on this device.')}
+                        onClick={async () => {
+                            if (!formData.emailOrEmployeeId) {
+                                setError('Please enter your email first to identify your account.');
+                                return;
+                            }
+
+                            setLoading(true);
+                            setError('');
+
+                            try {
+                                const { startAuthentication } = await import('@simplewebauthn/browser');
+
+                                // 1. Get options
+                                const resp = await fetch('/api/auth/webauthn/authenticate/start', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email: formData.emailOrEmployeeId })
+                                });
+
+                                const options = await resp.json();
+                                if (options.error) throw new Error(options.error);
+
+                                // 2. Authenticate
+                                const authResp = await startAuthentication(options);
+
+                                // 3. Verify
+                                const verifyResp = await fetch('/api/auth/webauthn/authenticate/finish', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(authResp)
+                                });
+
+                                const verifyJson = await verifyResp.json();
+
+                                if (verifyJson.verified && verifyJson.loginToken) {
+                                    // 4. Login with token
+                                    const result = await signIn('credentials', {
+                                        token: verifyJson.loginToken,
+                                        type: 'webauthn',
+                                        redirect: false
+                                    });
+
+                                    if (result?.error) {
+                                        setError('Biometric login failed: ' + result.error);
+                                    } else {
+                                        router.push('/dashboard');
+                                        router.refresh();
+                                    }
+                                } else {
+                                    throw new Error(verifyJson.error || 'Verification failed');
+                                }
+
+                            } catch (err: any) {
+                                console.error(err);
+                                setError(err.message || 'Biometric login failed');
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
                         className="flex items-center justify-center size-12 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-[#135bec] shadow-sm"
                         title="Biometric Login"
                     >
