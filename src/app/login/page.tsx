@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // React hooks
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -13,6 +13,46 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showQR, setShowQR] = useState(false);
+    const [qrData, setQrData] = useState<{ qrCode: string; pin: string; sessionId: string; } | null>(null);
+
+    // Poll for QR status
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (showQR && qrData?.sessionId) {
+            interval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/auth/qr/poll?id=${qrData.sessionId}`);
+                    const data = await res.json();
+
+                    if (data.status === 'authenticated' && data.token) {
+                        // Login
+                        const result = await signIn('credentials', {
+                            token: data.token,
+                            type: 'webauthn',
+                            redirect: false
+                        });
+
+                        if (result?.ok) {
+                            router.push('/dashboard');
+                            router.refresh();
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            }, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [showQR, qrData, router]);
+
+    // Start QR Session
+    useEffect(() => {
+        if (showQR && !qrData) {
+            fetch('/api/auth/qr/start', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => setQrData(data))
+                .catch(e => console.error(e));
+        }
+    }, [showQR]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
