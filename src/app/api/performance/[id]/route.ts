@@ -4,7 +4,8 @@ import Performance from '@/models/Performance';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
@@ -23,7 +24,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);

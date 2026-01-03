@@ -143,7 +143,7 @@ export async function GET(req: Request) {
 
             // Enrich with Approval Data for "Pending With" or "Approved By" info
             const enrichedLeaves = await Promise.all(leaves.map(async (doc) => {
-                const leave = doc.toObject();
+                const leave: any = doc.toObject();
                 // Find Approval Request linked to this leave
                 const approval = await ApprovalRequest.findOne({
                     referenceId: leave._id,

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const { verified, registrationInfo } = verification;
+    const { verified, registrationInfo } = verification as any;
 
     if (verified && registrationInfo) {
         const { credentialPublicKey, credentialID, counter } = registrationInfo;

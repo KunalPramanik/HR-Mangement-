@@ -4,7 +4,8 @@ import Asset from '@/models/Asset';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
@@ -31,7 +32,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
