@@ -67,6 +67,19 @@ export async function POST(req: Request) {
         const crypto = require('crypto');
         const loginToken = crypto.randomBytes(32).toString('hex');
 
+        // Check if this is a QR Login
+        if (body.qrSessionId && body.qrPin) {
+            const LoginSession = (await import('@/models/LoginSession')).default;
+            const session = await LoginSession.findOne({ sessionId: body.qrSessionId });
+
+            if (session && session.pin === body.qrPin) {
+                session.status = 'authenticated';
+                session.userId = user._id;
+                session.loginToken = loginToken;
+                await session.save();
+            }
+        }
+
         // Save to user (valid for 60 seconds)
         user.webauthnLoginToken = loginToken;
         user.webauthnLoginExpires = new Date(Date.now() + 60 * 1000);
