@@ -55,7 +55,9 @@ export default function SettingsPage() {
 
     // ... (Admin Config State)
 
-    const isAdmin = true; // Permissions open for everyone
+    // Check if user has admin/hr privileges to see extra tabs
+    const allowedAdminRoles = ['admin', 'director', 'cxo', 'vp', 'hr'];
+    const isAdmin = session?.user?.role ? allowedAdminRoles.includes(session.user.role) : false;
 
     useEffect(() => {
         if (!session) return;

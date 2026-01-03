@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
 
-echo "Zipping project (excluding node_modules)..."
+Write-Output "Zipping project (excluding node_modules)..."
 
 # Create a temporary folder
 $tempDir = Join-Path $env:TEMP "hr-portal-temp"
@@ -23,5 +23,5 @@ if (Test-Path $destinationZip) { Remove-Item $destinationZip }
 # Cleanup
 Remove-Item -Recurse -Force $tempDir
 
-echo "✅ Backup Complete!"
-echo "File created at: $destinationZip"
+Write-Output "✅ Backup Complete!"
+Write-Output "File created at: $destinationZip"

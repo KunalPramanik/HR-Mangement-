@@ -7,21 +7,20 @@ export default withAuth(
         const path = req.nextUrl.pathname;
 
         // Check role-based access
-        // Check role-based access
-        // PERMISSIONS OPENED: Access checks removed as per request
-        // if (path.startsWith('/hr') && !allowedHrRoles.includes(token?.role as string)) {
-        //     return NextResponse.redirect(new URL('/unauthorized', req.url));
-        // }
+        const allowedHrRoles = ['hr', 'admin', 'director', 'cxo', 'vp'];
+        if (path.startsWith('/hr') && !allowedHrRoles.includes(token?.role as string)) {
+            return NextResponse.redirect(new URL('/unauthorized', req.url));
+        }
 
-        // if (path.startsWith('/manager') && token?.role !== 'manager' && token?.role !== 'hr') {
-        //     return NextResponse.redirect(new URL('/unauthorized', req.url));
-        // }
+        if (path.startsWith('/manager') && token?.role !== 'manager' && token?.role !== 'hr') {
+            return NextResponse.redirect(new URL('/unauthorized', req.url));
+        }
 
         // Check admin access (Directors/CXO also need access to some admin pages)
-        // const allowedAdminRoles = ['admin', 'director', 'cxo', 'vp', 'hr'];
-        // if (path.startsWith('/admin') && !allowedAdminRoles.includes(token?.role as string)) {
-        //     return NextResponse.redirect(new URL('/unauthorized', req.url));
-        // }
+        const allowedAdminRoles = ['admin', 'director', 'cxo', 'vp', 'hr'];
+        if (path.startsWith('/admin') && !allowedAdminRoles.includes(token?.role as string)) {
+            return NextResponse.redirect(new URL('/unauthorized', req.url));
+        }
 
         return NextResponse.next();
     },
