@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 
 export default function PrismDock() {
@@ -60,6 +60,14 @@ export default function PrismDock() {
                             <span className="material-symbols-outlined">notifications</span>
                         </button>
 
+                        <button
+                            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                            className="size-10 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors"
+                            title="Sign Out"
+                        >
+                            <span className="material-symbols-outlined">logout</span>
+                        </button>
+
                         <Link href="/profile">
                             <div className="size-10 rounded-full bg-blue-100 border-2 border-white shadow-sm overflow-hidden relative cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-blue-500 transition-all">
                                 <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] font-bold">
@@ -104,9 +112,17 @@ export default function PrismDock() {
                     </div>
                     <span className="font-extrabold text-lg text-[#111827] tracking-tight">PRISMDOCK</span>
                 </div>
-                <button className="size-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                    <span className="material-symbols-outlined">notifications</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button className="size-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                        <span className="material-symbols-outlined">notifications</span>
+                    </button>
+                    <button
+                        onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                        className="size-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center"
+                    >
+                        <span className="material-symbols-outlined">logout</span>
+                    </button>
+                </div>
             </div>
         </>
     );

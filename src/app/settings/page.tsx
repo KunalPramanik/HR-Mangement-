@@ -2,17 +2,26 @@
 
 import { useState } from 'react';
 
+import { signOut } from 'next-auth/react';
+
 export default function SettingsPage() {
     const [theme, setTheme] = useState('light');
     const [notifications, setNotifications] = useState(true);
 
     return (
         <div className="flex flex-col gap-8 pb-12 w-full max-w-[1600px] mx-auto min-h-screen">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-extrabold text-[#111827] mb-2">System Settings</h1>
                     <p className="text-[#6b7280] font-medium">Configure global application preferences.</p>
                 </div>
+                <button
+                    onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                    className="px-6 py-3 rounded-full bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-500/30 flex items-center gap-2 hover:bg-red-600 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[20px]">logout</span>
+                    Sign Out
+                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
