@@ -13,6 +13,8 @@ export default function PrismDock() {
         { name: 'Overview', href: '/dashboard', icon: 'dashboard' },
         { name: 'People', href: '/directory', icon: 'groups' },
         { name: 'Payroll', href: '/payroll', icon: 'payments' },
+        { name: 'Calendar', href: '/calendar', icon: 'calendar_month' },
+        { name: 'Tasks', href: '/tasks', icon: 'task' },
         { name: 'Insights', href: '/hr/reports', icon: 'analytics' },
     ];
 
