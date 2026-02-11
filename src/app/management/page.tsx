@@ -9,6 +9,7 @@ export default function ManagementPage() {
         { name: 'Payroll Processing', href: '/payroll', icon: 'payments', color: 'bg-green-500', desc: 'Process salaries and generate slips' },
         { name: 'Performance Reviews', href: '/reviews', icon: 'rate_review', color: 'bg-orange-500', desc: 'Conduct employee evaluations' },
         { name: 'Recruitment', href: '/recruitment', icon: 'person_add', color: 'bg-pink-500', desc: 'Track applicants and interviews' },
+        { name: 'Onboarding', href: '/onboarding/new', icon: 'badge', color: 'bg-teal-500', desc: 'Onboard new hires' },
         { name: 'System Settings', href: '/settings', icon: 'settings', color: 'bg-slate-700', desc: 'Configure portal parameters' },
     ];
 

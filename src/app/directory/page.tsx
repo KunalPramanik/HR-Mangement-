@@ -62,6 +62,10 @@ export default function DirectoryPage() {
                         <p className="text-[#6b7280] font-medium">Connect with your colleagues across the organization.</p>
                     </div>
                 </div>
+                <Link href="/onboarding/new" className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors">
+                    <span className="material-symbols-outlined text-[20px]">person_add</span>
+                    New Employee
+                </Link>
             </div>
 
             {/* Search */}

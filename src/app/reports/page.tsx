@@ -4,6 +4,16 @@ import { useState } from 'react';
 
 export default function ReportsPage() {
     const [reportType, setReportType] = useState('daily');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = () => {
+        setSubmitting(true);
+        setTimeout(() => {
+            setSubmitting(false);
+            alert('Report submitted successfully!');
+            // Reset form or redirect
+        }, 1000);
+    };
 
     return (
         <div className="flex flex-col gap-8 pb-12 w-full max-w-[1600px] mx-auto min-h-screen">
@@ -45,7 +55,14 @@ export default function ReportsPage() {
 
                     <div className="flex justify-end gap-4">
                         <button className="px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50">Cancel</button>
-                        <button className="px-6 py-3 rounded-xl bg-[#111827] text-white font-bold shadow-lg shadow-gray-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all">Submit Report</button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={submitting}
+                            className="px-6 py-3 rounded-xl bg-[#111827] text-white font-bold shadow-lg shadow-gray-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {submitting && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
+                            Submit Report
+                        </button>
                     </div>
                 </div>
             </div>
