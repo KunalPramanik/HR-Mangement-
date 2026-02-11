@@ -1,330 +1,248 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import KudosWall from '@/components/dashboard/KudosWall';
 
 export default function DashboardPage() {
-    const { data: session, status } = useSession();
-    const router = useRouter();
-    const [unreadCount, setUnreadCount] = useState(0);
+    const { data: session } = useSession();
+    const [isOnDuty, setIsOnDuty] = useState(false);
+    const [time, setTime] = useState(new Date());
 
-    // Mock Notification Check (or fetch if API exists)
     useEffect(() => {
-        const checkNotifications = async () => {
-            try {
-                const res = await fetch('/api/notifications');
-                if (res.ok) {
-                    const data: any[] = await res.json();
-                    const unread = data.filter(n => !n.read).length;
-                    setUnreadCount(unread);
-                }
-            } catch (e) { console.error(e); }
-        };
-        checkNotifications();
+        const timer = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(timer);
     }, []);
 
-    // ... (rest of auth checks)
-
-    if (status === 'loading') {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-background-light dark:bg-background-dark">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#135bec]"></div>
-            </div>
-        );
-    }
-
-    if (!session) {
-        return null; // Handled by router.push
-    }
-
-    const user = session.user;
-    const firstName = user.name?.split(' ')[0] || 'User';
-    const isAdmin = ['admin', 'cxo', 'cho'].includes(user.role);
+    const toggleShift = () => setIsOnDuty(!isOnDuty);
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24 md:pb-8 xl:max-w-7xl xl:mx-auto">
-            {/* Top App Bar */}
-            <div className="sticky top-0 z-50 flex items-center bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md p-4 pb-2 justify-between border-b border-slate-200/50 dark:border-slate-800/50">
-                <div className="flex items-center gap-3">
-                    <div
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-white dark:ring-slate-700 shadow-sm bg-gradient-to-br from-[#135bec] to-blue-600 flex items-center justify-center text-white font-bold"
-                    >
-                        {firstName[0]}
+        <div className="flex flex-col gap-8 pb-12 w-full max-w-[1600px] mx-auto">
+
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-extrabold text-[#111827] tracking-tight mb-2">System Terminal</h1>
+                    <p className="text-[#6b7280] font-medium">Welcome back, Administrator. Your organization's health is optimal.</p>
+                </div>
+                <div className="flex bg-white p-1 rounded-full shadow-sm border border-gray-100">
+                    <button className="px-6 py-2 rounded-full bg-[#111827] text-white font-bold text-sm shadow-md transition-all">Dashboard</button>
+                    <button className="px-6 py-2 rounded-full text-gray-500 font-bold text-sm hover:bg-gray-50 transition-all">Management</button>
+                </div>
+            </div>
+
+            {/* Top Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Card 1: Attendance */}
+                <div className="soft-card p-8 flex items-center justify-between relative overflow-hidden group">
+                    <div className="relative size-24">
+                        <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                            <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                            <path className="text-[#3b82f6] drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]" strokeDasharray="92, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-[#111827]">92%</div>
                     </div>
-                    <div className="flex flex-col">
-                        <h2 className="text-slate-900 dark:text-white text-base font-bold leading-tight tracking-[-0.015em]">
-                            Mindstar Tech
-                        </h2>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                            Employee Portal
-                        </span>
+                    <div className="text-right z-10">
+                        <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Attendance</p>
+                        <h3 className="text-2xl font-extrabold text-[#111827] mb-1">Excellent</h3>
+                        <p className="text-sm font-bold text-[#10b981]">↗ +4.2%</p>
                     </div>
                 </div>
-                <div className="flex items-center justify-end gap-3">
-                    {isAdmin && (
-                        <Link href="/settings">
-                            <button className="flex items-center justify-center rounded-full size-10 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Settings">
-                                <span className="material-symbols-outlined text-[24px]">settings</span>
-                            </button>
-                        </Link>
-                    )}
-                    <Link href="/help">
-                        <button className="flex items-center justify-center rounded-full size-10 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Help & Support">
-                            <span className="material-symbols-outlined text-[24px]">help</span>
-                        </button>
-                    </Link>
-                    <Link href="/notifications">
-                        <button className="relative flex items-center justify-center rounded-full size-10 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                            <span className="material-symbols-outlined text-[24px]">notifications</span>
-                            {/* Blinking Light */}
-                            {unreadCount > 0 && (
-                                <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                </span>
-                            )}
-                        </button>
-                    </Link>
+
+                {/* Card 2: Open Tasks */}
+                <div className="soft-card p-8 flex items-center justify-between relative overflow-hidden group">
+                    <div className="relative size-24">
+                        <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                            <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                            <path className="text-[#8b5cf6] drop-shadow-[0_0_10px_rgba(139,92,246,0.5)]" strokeDasharray="14, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-[#111827]">14</div>
+                    </div>
+                    <div className="text-right z-10">
+                        <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Open Tasks</p>
+                        <h3 className="text-2xl font-extrabold text-[#111827] mb-1">On Track</h3>
+                        <p className="text-sm font-bold text-[#3b82f6]">🕒 3 due today</p>
+                    </div>
+                </div>
+
+                {/* Card 3: Sentiment */}
+                <div className="soft-card p-8 flex items-center justify-between relative overflow-hidden group">
+                    <div className="relative size-24">
+                        <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                            <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                            <path className="text-[#ef4444] drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]" strokeDasharray="85, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-[#111827]">4.8</div>
+                    </div>
+                    <div className="text-right z-10">
+                        <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Sentiment</p>
+                        <h3 className="text-2xl font-extrabold text-[#111827] mb-1">High Peak</h3>
+                        <p className="text-sm font-bold text-[#ef4444]">❤ Top 5% Org</p>
+                    </div>
                 </div>
             </div>
 
-            {/* Greeting Section */}
-            <div className="px-4 pt-6 pb-2">
-                <h2 className="text-slate-900 dark:text-white tracking-tight text-[28px] font-extrabold leading-tight">
-                    {(() => {
-                        const hour = new Date().getHours();
-                        if (hour < 12) return 'Good Morning';
-                        if (hour < 18) return 'Good Afternoon';
-                        return 'Good Evening';
-                    })()}, {firstName}.
-                </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-normal pt-1 capitalize">
-                    {user.position} • {user.role}
-                </p>
-            </div>
+            {/* Middle Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* Employee Recognition - Kudos Wall */}
-            <div className="px-4 py-2">
-                <KudosWall />
-            </div>
+                {/* Workstation Status */}
+                <div className="soft-card p-8 flex flex-col justify-between h-[400px]">
+                    <div>
+                        <p className="text-xs font-bold text-gray-400 tracking-wider uppercase text-center mb-8">Workstation Status</p>
 
-            {/* Role Specific Dashboard Link */}
-            {(user.role === 'hr' || user.role === 'manager' || user.role === 'admin' || user.role === 'director' || user.role === 'cho' || user.role === 'cxo') && (
-                <div className="px-4 py-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Link href={user.role === 'hr' ? "/hr/dashboard" : (user.role === 'manager' ? "/manager/dashboard" : "/director/dashboard")}>
-                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-700 dark:to-slate-600 rounded-xl p-4 flex items-center justify-between text-white shadow-lg cursor-pointer transform transition-transform active:scale-95 h-full">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-yellow-400">admin_panel_settings</span>
-                                <div>
-                                    <h3 className="font-bold text-sm">
-                                        {user.role === 'hr' ? 'HR Dashboard' :
-                                            user.role === 'manager' ? 'Manager Dashboard' :
-                                                'Executive Overview'}
-                                    </h3>
-                                    <p className="text-xs text-slate-300">Manage operations & approvals</p>
-                                </div>
+                        <div className="bg-gray-100 rounded-full p-2 flex items-center justify-between relative w-full max-w-[280px] mx-auto mb-10 h-16">
+                            <span className={`flex-1 text-center text-sm font-bold z-10 transition-colors ${!isOnDuty ? 'text-gray-900' : 'text-gray-400'}`}>OFF DUTY</span>
+                            <span className={`flex-1 text-center text-sm font-bold z-10 transition-colors ${isOnDuty ? 'text-[#10b981]' : 'text-gray-400'}`}>ON DUTY</span>
+
+                            {/* Toggle Pill */}
+                            <div
+                                onClick={toggleShift}
+                                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full shadow-lg transition-all duration-300 cursor-pointer flex items-center justify-center
+                                ${isOnDuty ? 'left-[calc(50%+2px)] bg-white' : 'left-1 bg-white'}`}
+                            >
+                                <div className={`size-8 rounded-full transition-colors ${isOnDuty ? 'bg-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.6)]' : 'bg-gray-300'}`}></div>
                             </div>
-                            <span className="material-symbols-outlined">arrow_forward</span>
                         </div>
-                    </Link>
 
-                    {/* Attendance Summary Link for all high levels */}
-                    {/* Attendance Summary Link for all high levels */}
-                    <Link href="/admin/attendance-summary">
-                        <div className="bg-gradient-to-r from-[#135bec] to-blue-600 rounded-xl p-4 flex items-center justify-between text-white shadow-lg cursor-pointer transform transition-transform active:scale-95 h-full">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-white">monitoring</span>
-                                <div>
-                                    <h3 className="font-bold text-sm">Live Attendance</h3>
-                                    <p className="text-xs text-blue-100">View today's check-ins</p>
-                                </div>
-                            </div>
-                            <span className="material-symbols-outlined">visibility</span>
+                        <div className="text-center">
+                            <h2 className="text-5xl font-mono font-bold text-[#111827] mb-2 tracking-tighter">
+                                {time.toLocaleTimeString([], { hour12: false })}
+                            </h2>
+                            <p className="text-gray-400 font-medium">Shift started at 08:00 AM</p>
                         </div>
-                    </Link>
+                    </div>
 
-                    {/* Admin: Adjust Leaves */}
-                    {user.role === 'admin' && (
-                        <Link href="/admin/leaves/adjustment">
-                            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-4 flex items-center justify-between text-white shadow-lg cursor-pointer transform transition-transform active:scale-95 h-full">
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-white">tune</span>
-                                    <div>
-                                        <h3 className="font-bold text-sm">Adjust Balances</h3>
-                                        <p className="text-xs text-orange-100">Modify employee leaves</p>
-                                    </div>
-                                </div>
-                                <span className="material-symbols-outlined">arrow_forward</span>
-                            </div>
-                        </Link>
-                    )}
-
-                    {/* Approvers: Pending Requests */}
-                    {['cxo', 'cho', 'director'].includes(user.role) && (
-                        <Link href="/approvals/leaves">
-                            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-4 flex items-center justify-between text-white shadow-lg cursor-pointer transform transition-transform active:scale-95 h-full">
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-white">approval_delegation</span>
-                                    <div>
-                                        <h3 className="font-bold text-sm">Leave Approvals</h3>
-                                        <p className="text-xs text-purple-100">Review adjustments</p>
-                                    </div>
-                                </div>
-                                <span className="material-symbols-outlined">arrow_forward</span>
-                            </div>
-                        </Link>
-                    )}
+                    <div className="flex gap-4">
+                        <button className="flex-1 py-3 bg-white border border-gray-100 shadow-sm rounded-xl font-bold text-[#111827] hover:bg-gray-50">TAKE BREAK</button>
+                        <button className="flex-1 py-3 bg-white border border-gray-100 shadow-sm rounded-xl font-bold text-[#ef4444] hover:bg-red-50">END SHIFT</button>
+                    </div>
                 </div>
-            )}
 
-            {/* My Status Card (Leave Balance) */}
-            <div className="px-4 py-4">
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div className="flex justify-between items-start mb-4">
+                {/* Performance Metrics Chart */}
+                <div className="soft-card p-8 col-span-2 h-[400px] flex flex-col">
+                    <div className="flex justify-between items-start mb-8">
                         <div>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                                Annual Leave
-                            </p>
-                            <h3 className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
-                                14 Days <span className="text-lg font-medium text-slate-400 dark:text-slate-500">Available</span>
-                            </h3>
+                            <h3 className="text-xl font-bold text-[#111827]">Performance Metrics</h3>
+                            <p className="text-gray-500 text-sm">Global efficiency across all departments</p>
                         </div>
-                        <Link href="/team/calendar">
-                            <div className="p-2 bg-[#135bec]/10 rounded-lg hover:bg-[#135bec]/20 transition-colors cursor-pointer" title="View Leave Calendar">
-                                <span className="material-symbols-outlined text-[#135bec] text-[24px]">calendar_month</span>
+                        <button className="size-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-900">
+                            <span className="material-symbols-outlined">more_horiz</span>
+                        </button>
+                    </div>
+
+                    <div className="flex-1 flex items-end justify-between gap-4 px-4 pb-4">
+                        {[40, 65, 50, 80, 75, 25, 15].map((height, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+                                <div className="w-full bg-[#3b82f6]/10 rounded-t-2xl relative h-[200px] flex items-end group-hover:bg-[#3b82f6]/20 transition-colors overflow-hidden">
+                                    <div
+                                        style={{ height: `${height}%` }}
+                                        className={`w-full rounded-t-xl transition-all duration-500 ${height > 50 ? 'bg-[#3b82f6] shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'bg-[#93c5fd]'}`}
+                                    ></div>
+                                </div>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}</span>
                             </div>
-                        </Link>
-                    </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 mb-2 overflow-hidden">
-                        <div className="bg-[#135bec] h-2.5 rounded-full" style={{ width: '65%' }}></div>
-                    </div>
-                    <div className="flex justify-between text-xs font-medium text-slate-400 dark:text-slate-500">
-                        <span>Used: 8 days</span>
-                        <span>Total: 22 days</span>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* Quick Actions Grid */}
-            <div className="flex flex-col">
-                <div className="flex items-center justify-between px-4 pt-2 pb-3">
-                    <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">
-                        Quick Actions
-                    </h2>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4">
-                    {/* Action 1 - Request Leave */}
-                    <Link href="/leave/request">
-                        <div className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-sm aspect-[4/3] cursor-pointer hover:shadow-md transition-all">
-                            <div className="absolute inset-0 bg-gradient-to-br from-[#135bec]/80 to-[#135bec]/40 transition-transform duration-500 group-hover:scale-105"></div>
-                            <div className="absolute inset-0 flex flex-col justify-end p-4">
-                                <span className="material-symbols-outlined text-white mb-1 text-[28px]">flight_takeoff</span>
-                                <p className="text-white text-base font-bold leading-tight">Request Leave</p>
-                            </div>
-                        </div>
-                    </Link>
+            {/* Bottom Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    {/* Action 2 - View Payslips */}
-                    <Link href="/payslips">
-                        <div className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-sm aspect-[4/3] cursor-pointer hover:shadow-md transition-all">
-                            <div className="absolute inset-0 bg-gradient-to-br from-slate-800/80 to-slate-600/40 transition-transform duration-500 group-hover:scale-105"></div>
-                            <div className="absolute inset-0 flex flex-col justify-end p-4">
-                                <span className="material-symbols-outlined text-white mb-1 text-[28px]">payments</span>
-                                <p className="text-white text-base font-bold leading-tight">View Payslips</p>
-                            </div>
-                        </div>
-                    </Link>
+                {/* Recent Milestones */}
+                <div className="soft-card p-8">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-bold text-[#111827]">Recent Milestones</h3>
+                        <Link href="#" className="text-xs font-bold text-[#3b82f6]">VIEW ALL</Link>
+                    </div>
 
-                    {/* Action 3 - Team Calendar */}
-                    <Link href="/team/calendar">
-                        <div className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-sm aspect-[4/3] cursor-pointer hover:shadow-md transition-all">
-                            <div className="absolute inset-0 bg-gradient-to-br from-green-600/80 to-green-400/40 transition-transform duration-500 group-hover:scale-105"></div>
-                            <div className="absolute inset-0 flex flex-col justify-end p-4">
-                                <span className="material-symbols-outlined text-white mb-1 text-[28px]">groups</span>
-                                <p className="text-white text-base font-bold leading-tight">Team Calendar</p>
-                            </div>
-                        </div>
-                    </Link>
-
-                    {/* Action 4 - Attendance */}
-                    <Link href="/attendance">
-                        <div className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-sm aspect-[4/3] cursor-pointer hover:shadow-md transition-all">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/80 to-purple-400/40 transition-transform duration-500 group-hover:scale-105"></div>
-                            <div className="absolute inset-0 flex flex-col justify-end p-4">
-                                <span className="material-symbols-outlined text-white mb-1 text-[28px]">schedule</span>
-                                <p className="text-white text-base font-bold leading-tight">Attendance</p>
-                            </div>
-                        </div>
-                    </Link>
-
-                    {/* Action 5 - Directory */}
-                    <Link href="/directory">
-                        <div className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-sm aspect-[4/3] cursor-pointer hover:shadow-md transition-all">
-                            <div className="absolute inset-0 bg-gradient-to-br from-teal-600/80 to-teal-400/40 transition-transform duration-500 group-hover:scale-105"></div>
-                            <div className="absolute inset-0 flex flex-col justify-end p-4">
-                                <span className="material-symbols-outlined text-white mb-1 text-[28px]">recent_actors</span>
-                                <p className="text-white text-base font-bold leading-tight">Directory</p>
-                            </div>
-                        </div>
-                    </Link>
-                </div>
-            </div>
-
-            {/* Latest Announcement */}
-            <div className="flex flex-col mt-6">
-                <div className="flex items-center justify-between px-4 pb-3">
-                    <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">
-                        Recent News
-                    </h2>
-                    <Link href="/announcements" className="text-[#135bec] text-sm font-bold">
-                        View all
-                    </Link>
-                </div>
-                <div className="px-4">
-                    <div className="flex flex-col gap-4">
-                        {/* Announcement Card */}
-                        <Link href="/announcements">
-                            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex gap-4 items-start cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                <div className="shrink-0 size-12 rounded-lg bg-[#135bec]/10 flex items-center justify-center text-[#135bec]">
-                                    <span className="material-symbols-outlined">campaign</span>
+                    <div className="space-y-6">
+                        {[
+                            { name: 'Sarah Jenkins', event: '5-Year Work Anniversary today!', icon: 'celebration', color: 'bg-blue-100 text-blue-600' },
+                            { name: 'New Employee Onboarding', event: 'Marco Rossi joined Creative Team.', icon: 'person_add', color: 'bg-green-100 text-green-600' },
+                            { name: 'Compliance Update', event: 'Security training completed by 98%.', icon: 'verified_user', color: 'bg-yellow-100 text-yellow-600' },
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-start gap-4">
+                                <div className={`shrink-0 size-10 rounded-full flex items-center justify-center ${item.color}`}>
+                                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
                                 </div>
-                                <div className="flex flex-col flex-1">
-                                    <span className="text-xs font-semibold text-[#135bec] mb-1">Today, 2:00 PM</span>
-                                    <h3 className="text-slate-900 dark:text-white font-bold text-base leading-snug mb-1">
-                                        Q4 Town Hall Meeting
-                                    </h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2">
-                                        Join us for company updates, quarterly awards, and a Q&A session with the leadership team.
-                                    </p>
+                                <div>
+                                    <h4 className="font-bold text-[#111827] text-sm">{item.name}</h4>
+                                    <p className="text-xs text-gray-500 font-medium mt-0.5">{item.event}</p>
                                 </div>
                             </div>
-                        </Link>
-
-                        {/* Payslip Row */}
-                        <Link href="/payslips">
-                            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                                        <span className="material-symbols-outlined text-[20px]">attach_money</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-900 dark:text-white font-bold text-sm">Payslip Ready</p>
-                                        <p className="text-slate-500 dark:text-slate-400 text-xs">December 2024</p>
-                                    </div>
-                                </div>
-                                <span className="material-symbols-outlined text-slate-400 text-[20px]">chevron_right</span>
-                            </div>
-                        </Link>
+                        ))}
                     </div>
                 </div>
+
+                {/* Direct Reports */}
+                <div className="soft-card p-8 col-span-2 relative">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-bold text-[#111827]">Direct Reports</h3>
+                        <div className="bg-gray-100 rounded-full px-4 py-2 flex items-center gap-2 w-64">
+                            <span className="material-symbols-outlined text-gray-400 text-[18px]">search</span>
+                            <input type="text" placeholder="Search team..." className="bg-transparent border-none outline-none text-sm text-[#111827] w-full placeholder:text-gray-400 font-medium" />
+                        </div>
+                    </div>
+
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+                                <th className="pb-4 pl-2">Employee</th>
+                                <th className="pb-4">Department</th>
+                                <th className="pb-4">Status</th>
+                                <th className="pb-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                            {[
+                                { name: 'Alexandria Smith', role: 'Senior UX Designer', dept: 'Creative', status: 'Online', statusColor: 'bg-green-500' },
+                                { name: 'James Wilson', role: 'Backend Lead', dept: 'Engineering', status: 'In Meeting', statusColor: 'bg-yellow-500' },
+                                { name: 'Elena Rodriguez', role: 'HR Manager', dept: 'Operations', status: 'Away', statusColor: 'bg-gray-300' },
+                            ].map((row, i) => (
+                                <tr key={i} className="group hover:bg-gray-50 transition-colors">
+                                    <td className="py-4 pl-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-10 rounded-full bg-gray-200 overflow-hidden">
+                                                {/* Placeholder Avatar */}
+                                                <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold bg-white border-2 border-gray-100">{row.name[0]}</div>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-[#111827]">{row.name}</p>
+                                                <p className="text-xs text-gray-500">{row.role}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-4">
+                                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${row.dept === 'Creative' ? 'bg-purple-50 text-purple-600' :
+                                                row.dept === 'Engineering' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
+                                            }`}>
+                                            {row.dept}
+                                        </span>
+                                    </td>
+                                    <td className="py-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`size-2 rounded-full ${row.statusColor}`}></div>
+                                            <span className="font-bold text-[#111827] text-xs">{row.status}</span>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 text-right">
+                                        <button className="text-gray-400 hover:text-[#3b82f6]">
+                                            <span className="material-symbols-outlined">more_vert</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* Floating Add Button */}
+                    <button className="absolute -right-5 bottom-12 size-14 rounded-full bg-[#3b82f6] text-white shadow-[0_10px_30px_rgba(59,130,246,0.4)] flex items-center justify-center hover:scale-110 transition-transform">
+                        <span className="material-symbols-outlined text-[28px]">add</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="h-6"></div>
-
-            {/* Bottom Navigation removed - handled by AppShell */}
         </div>
     );
 }

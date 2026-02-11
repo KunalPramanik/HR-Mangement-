@@ -1,7 +1,6 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import Sidebar from './Sidebar';
-import BottomNav from './BottomNav';
+import PrismDock from './PrismDock';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -12,12 +11,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="flex min-h-screen w-full bg-background-light dark:bg-background-dark">
-            <Sidebar />
-            <main className="flex-1 md:ml-64 w-full min-h-screen relative">
+        <div className="min-h-screen w-full bg-background-light relative">
+            <PrismDock />
+            <main className="w-full min-h-screen pt-28 pb-12 px-6 max-w-7xl mx-auto">
                 {children}
             </main>
-            <BottomNav />
         </div>
     );
 }

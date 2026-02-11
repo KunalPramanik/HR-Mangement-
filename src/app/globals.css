@@ -1,91 +1,62 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-/* Added Outfit for headers */
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* Premium Palette - HSL based for easy modification */
-  --primary-h: 220;
-  --primary-s: 90%;
-  --primary-l: 50%;
-  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  /* Prism Soft-UI Palette */
+  --color-canvas: #f3f4f6;
+  --color-surface: #ffffff;
 
-  --secondary-h: 280;
-  --secondary-s: 80%;
-  --secondary-l: 60%;
-  --secondary: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
 
-  --accent-h: 160;
-  --accent-s: 80%;
-  --accent-l: 45%;
-  --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
-
-  /* Glassmorphism Variables */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-
-  --background-light: #f8fafc;
-  --background-dark: #0f172a;
-  --surface-light: #ffffff;
-  --surface-dark: #1e293b;
-
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  /* Accents */
+  --color-primary: #3b82f6;
+  /* Royal Blue */
+  --color-success: #10b981;
+  /* Emerald */
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(220, 90%, 50%), hsl(260, 80%, 60%));
-  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  --gradient-attendance: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  --gradient-tasks: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  --gradient-sentiment: linear-gradient(135deg, #ef4444 0%, #ec4899 100%);
+
+  /* Shadows */
+  --shadow-soft: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+  --shadow-soft-hover: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  --shadow-glow-blue: 0 10px 30px -10px rgba(59, 130, 246, 0.5);
+  --shadow-glow-green: 0 10px 30px -10px rgba(16, 185, 129, 0.5);
 }
 
 @theme inline {
-  --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
-  --color-accent: var(--accent);
+  --color-background-light: var(--color-canvas);
+  --color-background-dark: var(--color-canvas);
+  /* Force light mode */
 
-  --color-background-light: var(--background-light);
-  --color-background-dark: var(--background-dark);
-
-  --color-surface-light: var(--surface-light);
-  --color-surface-dark: var(--surface-dark);
+  --color-primary: var(--color-primary);
+  --color-success: var(--color-success);
 
   --font-sans: 'Manrope', system-ui, sans-serif;
   --font-display: 'Outfit', system-ui, sans-serif;
 
-  --shadow-glass: var(--glass-shadow);
-  --animate-fade-in: fadeIn 0.5s ease-out;
-  --animate-slide-up: slideUp 0.5s ease-out;
-}
+  --shadow-soft: var(--shadow-soft);
+  --shadow-soft-hover: var(--shadow-soft-hover);
+  --shadow-glow-blue: var(--shadow-glow-blue);
+  --shadow-glow-green: var(--shadow-glow-green);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: var(--background-dark);
-    --foreground: #ffffff;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-
-    --glass-bg: rgba(30, 41, 59, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-  }
+  --radius-card: 2rem;
 }
 
 body {
   min-height: 100dvh;
   font-family: var(--font-sans);
-  background-color: var(--background-light);
-  color: var(--text-primary);
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(98, 114, 255, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(200, 98, 255, 0.1) 0%, transparent 40%);
+  background-color: var(--color-canvas);
+  color: var(--color-text-primary);
   transition: background-color 0.3s, color 0.3s;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: var(--background-dark);
-  }
 }
 
 /* Animations */
@@ -99,10 +70,10 @@ body {
   }
 }
 
-@keyframes slideUp {
+@keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-20px);
   }
 
   to {
@@ -111,29 +82,42 @@ body {
   }
 }
 
-/* Utility Classes for Glassmorphism */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  @apply rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+/* Utility Classes */
+.soft-card {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
 }
 
-.text-gradient {
-  background: var(--gradient-primary);
+.soft-card:hover {
+  box-shadow: var(--shadow-soft-hover);
+  transform: translateY(-2px);
+}
+
+.prism-dock {
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  border-radius: 9999px;
+}
+
+.text-gradient-blue {
+  background: var(--gradient-attendance);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Scrollbar */
