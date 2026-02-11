@@ -9,18 +9,71 @@ export default function DashboardPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const [isOnDuty, setIsOnDuty] = useState(false);
+    const [isOnBreak, setIsOnBreak] = useState(false);
     const [time, setTime] = useState(new Date());
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+    const [showToast, setShowToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
+    const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const toggleShift = () => setIsOnDuty(!isOnDuty);
+    // Toast Timer
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => setShowToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
+
+    const toggleShift = () => {
+        const newStatus = !isOnDuty;
+        setIsOnDuty(newStatus);
+        if (!newStatus) setIsOnBreak(false); // Reset break if going off duty
+        setShowToast({
+            msg: newStatus ? 'You are now ON DUTY.' : 'You are now OFF DUTY.',
+            type: 'success'
+        });
+    };
+
+    const toggleBreak = () => {
+        if (!isOnDuty) {
+            setShowToast({ msg: 'You must be ON DUTY to take a break.', type: 'error' });
+            return;
+        }
+        const newStatus = !isOnBreak;
+        setIsOnBreak(newStatus);
+        setShowToast({
+            msg: newStatus ? 'Break started. Enjoy!' : 'Break ended. Welcome back!',
+            type: 'success'
+        });
+    };
+
+    const endShift = () => {
+        if (!isOnDuty) {
+            setShowToast({ msg: 'You are already OFF DUTY.', type: 'error' });
+            return;
+        }
+        setIsOnDuty(false);
+        setIsOnBreak(false);
+        setShowToast({ msg: 'Shift ended successfully. Have a great evening!', type: 'success' });
+    };
+
+    const toggleActionMenu = (id: number) => {
+        setOpenActionMenuId(openActionMenuId === id ? null : id);
+    };
 
     return (
-        <div className="flex flex-col gap-6 md:gap-8 pb-20 md:pb-12 w-full max-w-[1600px] mx-auto min-h-screen">
+        <div className="flex flex-col gap-6 md:gap-8 pb-20 md:pb-12 w-full max-w-[1600px] mx-auto min-h-screen relative">
+
+            {/* Toast Notification */}
+            {showToast && (
+                <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full shadow-lg font-bold text-white animate-scaleUp ${showToast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+                    {showToast.msg}
+                </div>
+            )}
 
             {/* Header Section */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -111,13 +164,28 @@ export default function DashboardPage() {
                             <h2 className="text-4xl md:text-5xl font-mono font-bold text-[#111827] mb-2 tracking-tighter">
                                 {time.toLocaleTimeString([], { hour12: false })}
                             </h2>
-                            <p className="text-gray-400 font-medium text-sm">Shift started at 08:00 AM</p>
+                            <p className={`font-medium text-sm transition-colors ${isOnBreak ? 'text-yellow-500 font-bold' : 'text-gray-400'}`}>
+                                {isOnBreak ? 'ON BREAK - Returns at 1:00 PM' : (isOnDuty ? 'Shift started at 08:00 AM' : 'Shift not started')}
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex gap-4">
-                        <button className="flex-1 py-3 bg-white border border-gray-100 shadow-sm rounded-xl font-bold text-[#111827] text-xs md:text-sm hover:bg-gray-50 active:scale-95 transition-transform">TAKE BREAK</button>
-                        <button className="flex-1 py-3 bg-white border border-gray-100 shadow-sm rounded-xl font-bold text-[#ef4444] text-xs md:text-sm hover:bg-red-50 active:scale-95 transition-transform">END SHIFT</button>
+                        <button
+                            onClick={toggleBreak}
+                            disabled={!isOnDuty}
+                            className={`flex-1 py-3 border shadow-sm rounded-xl font-bold text-xs md:text-sm active:scale-95 transition-all
+                            ${isOnBreak ? 'bg-yellow-50 border-yellow-200 text-yellow-700' : 'bg-white border-gray-100 text-[#111827] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                        >
+                            {isOnBreak ? 'END BREAK' : 'TAKE BREAK'}
+                        </button>
+                        <button
+                            onClick={endShift}
+                            disabled={!isOnDuty}
+                            className="flex-1 py-3 bg-white border border-gray-100 shadow-sm rounded-xl font-bold text-[#ef4444] text-xs md:text-sm hover:bg-red-50 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            END SHIFT
+                        </button>
                     </div>
                 </div>
 
@@ -200,9 +268,9 @@ export default function DashboardPage() {
                             </thead>
                             <tbody className="text-sm">
                                 {[
-                                    { name: 'Alexandria Smith', role: 'Senior UX Designer', dept: 'Creative', status: 'Online', statusColor: 'bg-green-500' },
-                                    { name: 'James Wilson', role: 'Backend Lead', dept: 'Engineering', status: 'In Meeting', statusColor: 'bg-yellow-500' },
-                                    { name: 'Elena Rodriguez', role: 'HR Manager', dept: 'Operations', status: 'Away', statusColor: 'bg-gray-300' },
+                                    { id: 101, name: 'Alexandria Smith', role: 'Senior UX Designer', dept: 'Creative', status: 'Online', statusColor: 'bg-green-500' },
+                                    { id: 102, name: 'James Wilson', role: 'Backend Lead', dept: 'Engineering', status: 'In Meeting', statusColor: 'bg-yellow-500' },
+                                    { id: 103, name: 'Elena Rodriguez', role: 'HR Manager', dept: 'Operations', status: 'Away', statusColor: 'bg-gray-300' },
                                 ].map((row, i) => (
                                     <tr key={i} className="group hover:bg-gray-50 transition-colors">
                                         <td className="py-4 pl-2">
@@ -230,10 +298,30 @@ export default function DashboardPage() {
                                                 <span className="font-bold text-[#111827] text-xs">{row.status}</span>
                                             </div>
                                         </td>
-                                        <td className="py-4 text-right">
-                                            <button className="text-gray-400 hover:text-[#3b82f6]">
+                                        <td className="py-4 text-right relative">
+                                            <button
+                                                onClick={() => toggleActionMenu(row.id)}
+                                                className="text-gray-400 hover:text-[#3b82f6]"
+                                                title="Options"
+                                            >
                                                 <span className="material-symbols-outlined">more_vert</span>
                                             </button>
+
+                                            {/* Action Dropdown */}
+                                            {openActionMenuId === row.id && (
+                                                <div className="absolute right-0 top-10 w-32 bg-white rounded-lg shadow-xl border border-gray-100 z-30 animate-scaleUp origin-top-right">
+                                                    <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left">
+                                                        <span className="material-symbols-outlined text-[16px]">visibility</span> View Pforile
+                                                    </button>
+                                                    <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left">
+                                                        <span className="material-symbols-outlined text-[16px]">edit</span> Edit Details
+                                                    </button>
+                                                    <div className="h-px bg-gray-100 my-1"></div>
+                                                    <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 text-left">
+                                                        <span className="material-symbols-outlined text-[16px]">block</span> Suspend
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -257,14 +345,14 @@ export default function DashboardPage() {
                                     <span className="material-symbols-outlined text-gray-400">flight_takeoff</span>
                                     Request Leave
                                 </Link>
-                                <button className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 w-full text-left">
+                                <Link href="/tasks" className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
                                     <span className="material-symbols-outlined text-gray-400">task_alt</span>
                                     New Task
-                                </button>
-                                <button className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 w-full text-left">
+                                </Link>
+                                <Link href="/reports" className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
                                     <span className="material-symbols-outlined text-gray-400">person_add</span>
                                     Add Report
-                                </button>
+                                </Link>
                             </div>
                         )}
                     </div>
