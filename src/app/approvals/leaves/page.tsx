@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 export default function LeaveApprovalsPage() {
     const { data: session } = useSession();
@@ -33,14 +34,14 @@ export default function LeaveApprovalsPage() {
             });
 
             if (res.ok) {
-                alert('Action Successful');
+                toast.success('Action Successful');
                 fetchRequests();
             } else {
                 const err = await res.json();
-                alert('Error: ' + err.error);
+                toast.error('Error: ' + err.error);
             }
         } catch (e) {
-            alert('Network Error');
+            toast.error('Network Error');
         }
     };
 

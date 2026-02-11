@@ -65,13 +65,9 @@ export async function PUT(
         // Security Patch: RBAC Check (Fixing AUTH-02 & MGMT-01)
         // Only HR, Admin, Directors can edit ANY profile.
         // Users can only edit their OWN profile (and even then, we might restrict fields in the future).
-        const allowedRoles = ['hr', 'admin', 'director', 'vp', 'cxo'];
-        const isPrivileged = allowedRoles.includes(session.user.role);
-        const isSelf = session.user.id === id;
-
-        if (!isPrivileged && !isSelf) {
+        if (session.user.id !== id) {
             return NextResponse.json({
-                error: 'Forbidden: You do not have permission to edit this profile.'
+                error: 'Forbidden: You can only edit your own profile.'
             }, { status: 403 });
         }
 
@@ -80,16 +76,15 @@ export async function PUT(
 
         // Security: Prevent Privilege Escalation
         // If the user is NOT an admin/hr/director, they cannot change these fields:
-        if (!isPrivileged) {
-            delete data.role;
-            delete data.salary; // Assuming salary is stored here or similar fields
-            delete data.department;
-            delete data.position; // Position might be sensitive if tied to bands
-            delete data.employeeId;
-            delete data.managerId;
-            delete data.hrManagerId;
-            // They CAN update: address, phone, bio, pictures, skills, emergencyContact
-        }
+        // Since only the user can edit their own profile, we MUST restrict sensitive fields
+        delete data.role;
+        delete data.salary; // Assuming salary is stored here or similar fields
+        delete data.department;
+        delete data.position; // Position might be sensitive if tied to bands
+        delete data.employeeId;
+        delete data.managerId;
+        delete data.hrManagerId;
+        // They CAN update: address, phone, bio, pictures, skills, emergencyContact
 
         // Always prevent password update via this route (should use specific change-password route)
         delete data.password;

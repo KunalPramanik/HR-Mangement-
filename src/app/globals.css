@@ -1,36 +1,142 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+/* Added Outfit for headers */
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
 :root {
-  --primary: #135bec;
-  --background-light: #f6f6f8;
-  --background-dark: #101622;
-  --surface-dark: #1a2230;
+  /* Premium Palette - HSL based for easy modification */
+  --primary-h: 220;
+  --primary-s: 90%;
+  --primary-l: 50%;
+  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+
+  --secondary-h: 280;
+  --secondary-s: 80%;
+  --secondary-l: 60%;
+  --secondary: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
+
+  --accent-h: 160;
+  --accent-s: 80%;
+  --accent-l: 45%;
+  --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+
+  /* Glassmorphism Variables */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
+  --background-light: #f8fafc;
+  --background-dark: #0f172a;
+  --surface-light: #ffffff;
+  --surface-dark: #1e293b;
+
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(220, 90%, 50%), hsl(260, 80%, 60%));
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 
 @theme inline {
   --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+
   --color-background-light: var(--background-light);
   --color-background-dark: var(--background-dark);
+
+  --color-surface-light: var(--surface-light);
   --color-surface-dark: var(--surface-dark);
+
+  --font-sans: 'Manrope', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+
+  --shadow-glass: var(--glass-shadow);
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-slide-up: slideUp 0.5s ease-out;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: var(--background-dark);
     --foreground: #ffffff;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+
+    --glass-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 }
 
 body {
   min-height: 100dvh;
-  font-family: 'Manrope', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans);
+  background-color: var(--background-light);
+  color: var(--text-primary);
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(98, 114, 255, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(200, 98, 255, 0.1) 0%, transparent 40%);
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* Custom scrollbar hide for cleaner UI */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--background-dark);
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes for Glassmorphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  @apply rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

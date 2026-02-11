@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface LeaveRequest {
     _id: string;
@@ -33,7 +34,7 @@ export default function HRLeaveApprovalsPage() {
 
     const fetchLeaves = async () => {
         try {
-            const res = await fetch('/api/leave');
+            const res = await fetch('/api/leaves');
             if (res.ok) {
                 const data = await res.json();
                 setRequests(data);
@@ -52,7 +53,7 @@ export default function HRLeaveApprovalsPage() {
 
     const handleAction = async (id: string, action: 'approved' | 'rejected') => {
         try {
-            const res = await fetch(`/api/leave/${id}`, {
+            const res = await fetch(`/api/leaves/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: action })
@@ -61,12 +62,12 @@ export default function HRLeaveApprovalsPage() {
             if (res.ok) {
                 // Update local state instead of refetching to keep UI smooth
                 setRequests(prev => prev.map(r => r._id === id ? { ...r, status: action } : r));
-                alert(`Request ${action} successfully`);
+                toast.success(`Request ${action} successfully`);
             } else {
-                alert('Action failed');
+                toast.error('Action failed');
             }
         } catch (error) {
-            alert('Error processing request');
+            toast.error('Error processing request');
         }
     };
 

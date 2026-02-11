@@ -1,6 +1,7 @@
 'use client';
 
 import { SessionProvider } from 'next-auth/react';
+import { Toaster } from 'sonner';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext({
@@ -43,6 +44,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <SessionProvider>
             <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
                 {children}
+                <Toaster richColors position="top-right" />
             </ThemeContext.Provider>
         </SessionProvider>
     );

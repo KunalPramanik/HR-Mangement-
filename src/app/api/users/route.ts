@@ -3,9 +3,19 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
 export async function POST(req: Request) {
     try {
         await dbConnect();
+        const session = await getServerSession(authOptions);
+
+        // Security Check: Only HR/Admin/Execs can create users
+        if (!session || !['hr', 'admin', 'director', 'vp', 'cxo'].includes(session.user.role)) {
+            return NextResponse.json({ error: 'Unauthorized: Access Denied' }, { status: 403 });
+        }
+
         const data = await req.json();
 
         // Basic validation
@@ -56,12 +66,23 @@ export async function POST(req: Request) {
 export async function GET(request: Request) {
     try {
         await dbConnect();
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
         const email = searchParams.get('email');
-
         const simple = searchParams.get('simple');
 
         if (email) {
+            // Allow users to fetch their own profile or if they are HR/Admin/Manager
+            // For now, restrictive check:
+            if (session.user.email !== email && !['hr', 'admin', 'director', 'vp', 'cxo', 'manager'].includes(session.user.role)) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            }
+
             const user = await User.findOne({ email }).select('-password').populate('managerId', 'firstName lastName position');
             if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
@@ -75,9 +96,14 @@ export async function GET(request: Request) {
         }
 
         if (simple === 'true') {
-            // Return simplified list for dropdowns
+            // Return simplified list for dropdowns (Allowed for all auth users)
             const users = await User.find({ isActive: true }).select('_id firstName lastName role department');
             return NextResponse.json({ users });
+        }
+
+        // Full List: PROTECTED
+        if (!['hr', 'admin', 'director', 'vp', 'cxo'].includes(session.user.role)) {
+            return NextResponse.json({ error: 'Unauthorized: View Restricted' }, { status: 403 });
         }
 
         const users = await User.find({}).select('firstName lastName role employeeId position department email phoneNumber profilePicture isActive');

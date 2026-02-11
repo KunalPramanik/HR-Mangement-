@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { differenceInBusinessDays, parseISO } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function LeaveRequestPage() {
     const router = useRouter();
@@ -35,7 +36,7 @@ export default function LeaveRequestPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/leave', {
+            const res = await fetch('/api/leaves', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -48,14 +49,14 @@ export default function LeaveRequestPage() {
             });
 
             if (res.ok) {
-                alert('Leave request submitted successfully!');
+                toast.success('Leave request submitted successfully!');
                 router.push('/dashboard');
             } else {
                 const data = await res.json();
-                alert(data.error || 'Failed to submit request');
+                toast.error(data.error || 'Failed to submit request');
             }
         } catch (error) {
-            alert('An error occurred. Please try again.');
+            toast.error('An error occurred. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -174,7 +175,7 @@ function RequestHistory() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/leave')
+        fetch('/api/leaves')
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) setRequests(data);

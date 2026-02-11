@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface LeaveRequest {
     _id: string;
@@ -30,7 +31,7 @@ export default function ManagerApprovalsPage() {
 
     const fetchLeaves = async () => {
         try {
-            const res = await fetch('/api/leave');
+            const res = await fetch('/api/leaves');
             if (res.ok) {
                 const data = await res.json();
                 // Filter only 'pending' for this view
@@ -46,7 +47,7 @@ export default function ManagerApprovalsPage() {
 
     const handleAction = async (id: string, action: 'approved' | 'rejected') => {
         try {
-            const res = await fetch(`/api/leave/${id}`, {
+            const res = await fetch(`/api/leaves/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: action })
@@ -55,12 +56,12 @@ export default function ManagerApprovalsPage() {
             if (res.ok) {
                 // Remove from list
                 setRequests(requests.filter(r => r._id !== id));
-                alert(`Request ${action} successfully`);
+                toast.success(`Request ${action} successfully`);
             } else {
-                alert('Action failed');
+                toast.error('Action failed');
             }
         } catch (error) {
-            alert('Error processing request');
+            toast.error('Error processing request');
         }
     };
 

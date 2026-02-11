@@ -6,7 +6,7 @@ export interface IUser extends Document {
     password: string;
     firstName: string;
     lastName: string;
-    role: 'employee' | 'manager' | 'hr' | 'admin' | 'cho' | 'cxo' | 'director' | 'vp' | 'intern';
+    role: 'employee' | 'manager' | 'hr' | 'admin' | 'cho' | 'cxo' | 'director' | 'vp' | 'intern' | 'cfo';
     department: string;
     position: string;
     managerId?: mongoose.Types.ObjectId;
@@ -119,7 +119,7 @@ const UserSchema = new Schema<IUser>(
         },
         role: {
             type: String,
-            enum: ['employee', 'manager', 'hr', 'intern', 'admin', 'cho', 'cxo', 'director', 'vp'],
+            enum: ['employee', 'manager', 'hr', 'intern', 'admin', 'cho', 'cxo', 'director', 'vp', 'cfo'],
             default: 'employee',
         },
         employmentStatus: {

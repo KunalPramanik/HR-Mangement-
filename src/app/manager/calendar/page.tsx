@@ -30,7 +30,7 @@ export default function ManagerTeamCalendar() {
 
     const fetchLeaves = async () => {
         try {
-            const res = await fetch('/api/leave');
+            const res = await fetch('/api/leaves');
             if (res.ok) {
                 const data = await res.json();
                 // Filter only approved leaves for the calendar view to avoid clutter

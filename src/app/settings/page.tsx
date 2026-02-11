@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 
 
@@ -65,7 +66,7 @@ export default function SettingsPage() {
         // Fetch User Profile
         const fetchProfile = async () => {
             try {
-                const res = await fetch('/api/user/profile');
+                const res = await fetch('/api/users/profile');
                 if (res.ok) {
                     const data = await res.json();
                     setProfile({
@@ -88,7 +89,7 @@ export default function SettingsPage() {
         // Fetch Passkeys
         const fetchPasskeys = async () => {
             try {
-                const res = await fetch('/api/user/passkeys');
+                const res = await fetch('/api/users/passkeys');
                 if (res.ok) {
                     const data = await res.json();
                     setPasskeys(data.passkeys || []);
@@ -119,14 +120,14 @@ export default function SettingsPage() {
             });
 
             if (res.ok) {
-                alert('System settings captured successfully!');
+                toast.success('System settings captured successfully!');
             } else {
                 const data = await res.json();
-                alert('Failed to save settings: ' + (data.error || 'Unknown error'));
+                toast.error('Failed to save settings: ' + (data.error || 'Unknown error'));
             }
         } catch (e) {
             console.error(e);
-            alert('Network error while saving settings');
+            toast.error('Network error while saving settings');
         }
         setSaving(false);
     };
@@ -135,7 +136,7 @@ export default function SettingsPage() {
         e.preventDefault();
         setSaving(true);
         try {
-            const res = await fetch('/api/user/profile', {
+            const res = await fetch('/api/users/profile', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -149,12 +150,12 @@ export default function SettingsPage() {
             });
 
             if (res.ok) {
-                alert('Profile updated successfully!');
+                toast.success('Profile updated successfully!');
             } else {
-                alert('Failed to update profile');
+                toast.error('Failed to update profile');
             }
         } catch (e) {
-            alert('Network error');
+            toast.error('Network error');
         }
         setSaving(false);
     };
@@ -178,11 +179,11 @@ export default function SettingsPage() {
                 // Set the URL returned from server
                 setProfile(prev => ({ ...prev, avatar: data.url }));
             } else {
-                alert('Failed to upload image');
+                toast.error('Failed to upload image');
             }
         } catch (err) {
             console.error(err);
-            alert('Error uploading image');
+            toast.error('Error uploading image');
         }
     };
 
@@ -191,13 +192,13 @@ export default function SettingsPage() {
         setSaving(true);
 
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            alert("New passwords don't match");
+            toast.error("New passwords don't match");
             setSaving(false);
             return;
         }
 
         try {
-            const res = await fetch('/api/user/password', {
+            const res = await fetch('/api/users/password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -207,14 +208,14 @@ export default function SettingsPage() {
             });
 
             if (res.ok) {
-                alert('Password changed successfully!');
+                toast.success('Password changed successfully!');
                 setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             } else {
                 const data = await res.json();
-                alert(data.error || 'Failed to update password');
+                toast.error(data.error || 'Failed to update password');
             }
         } catch (e) {
-            alert('Network error');
+            toast.error('Network error');
         }
         setSaving(false);
     };
@@ -244,20 +245,20 @@ export default function SettingsPage() {
             const verificationJSON = await verificationResp.json();
 
             if (verificationJSON.verified) {
-                alert('Device registered successfully!');
+                toast.success('Device registered successfully!');
                 // Refresh list
-                const res = await fetch('/api/user/passkeys');
+                const res = await fetch('/api/users/passkeys');
                 const data = await res.json();
                 setPasskeys(data.passkeys || []);
             } else {
-                alert(`Registration failed: ${verificationJSON.error}`);
+                toast.error(`Registration failed: ${verificationJSON.error}`);
             }
         } catch (error: any) {
             console.error(error);
             if (error.name === 'InvalidStateError') {
-                alert('This device is already registered.');
+                toast.error('This device is already registered.');
             } else {
-                alert('Failed to register device. ' + error.message);
+                toast.error('Failed to register device. ' + error.message);
             }
         }
         setRegisteringPasskey(false);
@@ -266,7 +267,7 @@ export default function SettingsPage() {
     const handleDeletePasskey = async (id: string) => {
         if (!confirm('Are you sure you want to remove this device?')) return;
         try {
-            await fetch(`/api/user/passkeys?id=${id}`, { method: 'DELETE' });
+            await fetch(`/api/users/passkeys?id=${id}`, { method: 'DELETE' });
             setPasskeys(prev => prev.filter(p => p._id !== id));
         } catch (e) { console.error(e); }
     };

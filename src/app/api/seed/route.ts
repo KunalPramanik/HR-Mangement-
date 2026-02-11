@@ -3,9 +3,18 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         await dbConnect();
+
+        // 0. Security Check
+        const headersList = request.headers;
+        const secret = headersList.get('x-admin-secret');
+        const envSecret = process.env.ADMIN_SECRET || 'dev-admin-secret'; // Fallback for dev only
+
+        if (secret !== envSecret) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         // 1. Clear existing users for a clean hierarchy setup
         await User.deleteMany({});
@@ -54,11 +63,41 @@ export async function GET() {
             role: 'cxo',
             department: 'Executive',
             position: 'Chief Experience Officer',
-            managerId: cho._id, // <<--- Reports to CHO
+            managerId: cho._id,
             hireDate: new Date('2020-03-01'),
             isActive: true,
         });
-        usersCreated.push(`${cxo.role}: ${cxo.firstName} (Reports to ${cho.firstName})`);
+        usersCreated.push(`${cxo.role}: ${cxo.firstName}`);
+
+        const cfo = await User.create({
+            employeeId: 'CFO001',
+            email: 'cfo@mindstar.com',
+            password: hashedPassword,
+            firstName: 'Lucius',
+            lastName: 'Fox',
+            role: 'cfo',
+            department: 'Finance',
+            position: 'Chief Financial Officer',
+            managerId: director._id,
+            hireDate: new Date('2020-03-15'),
+            isActive: true,
+        });
+        usersCreated.push(`${cfo.role}: ${cfo.firstName}`);
+
+        const vp = await User.create({
+            employeeId: 'VP001',
+            email: 'vp@mindstar.com',
+            password: hashedPassword,
+            firstName: 'Pepper',
+            lastName: 'Potts',
+            role: 'vp',
+            department: 'Operations',
+            position: 'VP of Operations',
+            managerId: cxo._id,
+            hireDate: new Date('2020-04-01'),
+            isActive: true,
+        });
+        usersCreated.push(`${vp.role}: ${vp.firstName}`);
 
         // --- LEVEL 4: ADMIN (Reports to CXO) ---
         // Note: Admin usually is system wide, but in this chain we place them here

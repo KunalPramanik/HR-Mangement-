@@ -6,6 +6,11 @@ export default withAuth(
         const token = req.nextauth.token;
         const path = req.nextUrl.pathname;
 
+        // Allow public API routes (Auth, Seed - protected by header)
+        if (path.startsWith('/api/auth') || path.startsWith('/api/seed')) {
+            return NextResponse.next();
+        }
+
         // Check role-based access
         const allowedHrRoles = ['hr', 'admin', 'director', 'cxo', 'vp'];
         if (path.startsWith('/hr') && !allowedHrRoles.includes(token?.role as string)) {
@@ -58,5 +63,6 @@ export const config = {
         '/support/:path*',
         '/policies/:path*',
         '/directory/:path*',
+        '/api/:path*', // Protect all API routes
     ],
 };

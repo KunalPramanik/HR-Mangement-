@@ -61,18 +61,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="absolute top-4 right-4 z-10">
-                    <button
-                        onClick={() => {
-                            if (displayUser.role === 'admin' || displayUser.role === 'hr' || session?.user?.email === displayUser.email) {
-                                router.push(`/profile/edit?email=${displayUser.email}`);
-                            } else {
-                                alert('Profile changes require approval. Please contact your Manager or HR.');
-                            }
-                        }}
-                        className="px-4 py-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors text-sm font-bold flex items-center gap-2"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">edit</span> Edit
-                    </button>
+                    {session?.user?.email === displayUser.email && (
+                        <button
+                            onClick={() => router.push(`/profile/edit?email=${displayUser.email}`)}
+                            className="px-4 py-2 rounded-full bg-white/20 text-white backdrop-blur-md hover:bg-white/30 transition-colors text-sm font-bold flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">edit</span> Edit Profile
+                        </button>
+                    )}
                 </div>
             </div>
 

@@ -3,8 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function ReportsPage() {
+    // Role access control is handled by middleware
     const router = useRouter();
     const [generating, setGenerating] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -78,7 +80,7 @@ export default function ReportsPage() {
     };
 
     const downloadCSV = () => {
-        if (attendanceLogs.length === 0) return alert('No data to export');
+        if (attendanceLogs.length === 0) return toast.error('No data to export');
 
         const headers = ['Employee', 'Department', 'Manager', 'Status', 'Date', 'Clock In', 'Clock Out', 'Leave Type', 'Leave Reason'];
         const rows = attendanceLogs.map(log => [
@@ -103,7 +105,7 @@ export default function ReportsPage() {
     };
 
     const handleStartCycle = () => {
-        alert(`New Payroll Cycle Started for ${cycleMonth}! Notifications sent to managers.`);
+        toast.success(`New Payroll Cycle Started for ${cycleMonth}! Notifications sent to managers.`);
         setShowModal(false);
     };
 
