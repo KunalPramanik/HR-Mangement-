@@ -10,6 +10,8 @@ export default function ManagementPage() {
         { name: 'Performance Reviews', href: '/reviews', icon: 'rate_review', color: 'bg-orange-500', desc: 'Conduct employee evaluations' },
         { name: 'Recruitment', href: '/recruitment', icon: 'person_add', color: 'bg-pink-500', desc: 'Track applicants and interviews' },
         { name: 'Onboarding', href: '/onboarding/new', icon: 'badge', color: 'bg-teal-500', desc: 'Onboard new hires' },
+        { name: 'Assets', href: '/assets', icon: 'devices', color: 'bg-indigo-500', desc: 'Track comprehensive inventory' },
+        { name: 'Audit Logs', href: '/admin/audit-logs', icon: 'history', color: 'bg-gray-600', desc: 'System security trails' },
         { name: 'System Settings', href: '/settings', icon: 'settings', color: 'bg-slate-700', desc: 'Configure portal parameters' },
     ];
 

@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AiAssistant from '../../components/AiAssistant';
 
 export default function DashboardPage() {
     const { data: session } = useSession();
@@ -65,8 +66,36 @@ export default function DashboardPage() {
         setOpenActionMenuId(openActionMenuId === id ? null : id);
     };
 
+    const [locationStatus, setLocationStatus] = useState<'verifying' | 'verified' | 'error'>('verifying');
+    const [showAi, setShowAi] = useState(false);
+
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => setLocationStatus('verified'),
+                (error) => setLocationStatus('error')
+            );
+        } else {
+            setLocationStatus('error');
+        }
+    }, []);
+
     return (
         <div className="flex flex-col gap-6 md:gap-8 pb-20 md:pb-12 w-full max-w-[1600px] mx-auto min-h-screen relative">
+
+            {/* AI Assistant Toggle */}
+            <button
+                onClick={() => setShowAi(!showAi)}
+                className="fixed bottom-24 right-6 md:bottom-32 md:right-8 z-50 size-14 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform animate-bounce-slow"
+            >
+                <span className="material-symbols-outlined text-[28px]">{showAi ? 'close' : 'auto_awesome'}</span>
+            </button>
+
+            {showAi && (
+                <div className="fixed bottom-40 right-6 md:right-8 z-50 w-full max-w-sm md:max-w-md animate-scaleUp origin-bottom-right">
+                    <AiAssistant />
+                </div>
+            )}
 
             {/* Toast Notification */}
             {showToast && (
@@ -144,7 +173,18 @@ export default function DashboardPage() {
                 {/* Workstation Status */}
                 <div className="soft-card p-6 md:p-8 flex flex-col justify-between h-[350px] md:h-[400px]">
                     <div>
-                        <p className="text-xs font-bold text-gray-400 tracking-wider uppercase text-center mb-6 md:mb-8">Workstation Status</p>
+                        <p className="text-xs font-bold text-gray-400 tracking-wider uppercase text-center mb-2 md:mb-4">Workstation Status</p>
+
+                        {/* Location Badge */}
+                        <div className="flex justify-center mb-4">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1 uppercase tracking-wider transition-colors
+                                ${locationStatus === 'verified' ? 'bg-green-50 text-green-600 border-green-200' :
+                                    locationStatus === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-gray-200'}
+                            `}>
+                                <span className={`size-1.5 rounded-full ${locationStatus === 'verified' ? 'bg-green-500' : locationStatus === 'error' ? 'bg-red-500' : 'bg-gray-400 animate-pulse'}`}></span>
+                                {locationStatus === 'verified' ? 'Location Verified' : locationStatus === 'error' ? 'Location Error' : 'Verifying...'}
+                            </span>
+                        </div>
 
                         <div className="bg-gray-100 rounded-full p-2 flex items-center justify-between relative w-full max-w-[280px] mx-auto mb-8 md:mb-10 h-14 md:h-16">
                             <span className={`flex-1 text-center text-xs md:text-sm font-bold z-10 transition-colors ${!isOnDuty ? 'text-gray-900' : 'text-gray-400'}`}>OFF DUTY</span>
@@ -287,7 +327,7 @@ export default function DashboardPage() {
                                         </td>
                                         <td className="py-4">
                                             <span className={`inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${row.dept === 'Creative' ? 'bg-purple-50 text-purple-600' :
-                                                    row.dept === 'Engineering' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
+                                                row.dept === 'Engineering' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
                                                 }`}>
                                                 {row.dept}
                                             </span>
@@ -311,7 +351,7 @@ export default function DashboardPage() {
                                             {openActionMenuId === row.id && (
                                                 <div className="absolute right-0 top-10 w-32 bg-white rounded-lg shadow-xl border border-gray-100 z-30 animate-scaleUp origin-top-right">
                                                     <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left">
-                                                        <span className="material-symbols-outlined text-[16px]">visibility</span> View Pforile
+                                                        <span className="material-symbols-outlined text-[16px]">visibility</span> View Profile
                                                     </button>
                                                     <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left">
                                                         <span className="material-symbols-outlined text-[16px]">edit</span> Edit Details
