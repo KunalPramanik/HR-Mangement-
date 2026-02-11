@@ -26,11 +26,20 @@ export default function AssetsPage() {
                     <p className="text-[#6b7280] font-medium">Track and manage company equipment lifecycle.</p>
                 </div>
                 <div className="flex gap-4">
-                    <button className="px-6 py-3 rounded-full bg-white border border-gray-200 text-gray-600 font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2">
+                    <button
+                        onClick={() => alert('Scanner module not connected. Please attach a barcode scanner.')}
+                        className="px-6 py-3 rounded-full bg-white border border-gray-200 text-gray-600 font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2"
+                    >
                         <span className="material-symbols-outlined">qr_code_scanner</span>
                         Scan
                     </button>
-                    <button className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors">
+                    <button
+                        onClick={() => {
+                            const name = prompt('Enter Asset Name:');
+                            if (name) alert(`Asset "${name}" added to inventory successfully.`);
+                        }}
+                        className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors"
+                    >
                         <span className="material-symbols-outlined">add</span>
                         Add Asset
                     </button>

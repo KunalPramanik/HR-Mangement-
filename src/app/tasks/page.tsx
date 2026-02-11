@@ -21,7 +21,13 @@ export default function TasksPage() {
                     <h1 className="text-4xl font-extrabold text-[#111827] tracking-tight mb-2">My Tasks</h1>
                     <p className="text-[#6b7280] font-medium">Manage your daily priorities.</p>
                 </div>
-                <button className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors">
+                <button
+                    onClick={() => {
+                        const title = prompt('Enter new task title:');
+                        if (title) alert(`Task "${title}" created!`);
+                    }}
+                    className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors"
+                >
                     <span className="material-symbols-outlined text-[20px]">add</span>
                     New Task
                 </button>
@@ -43,16 +49,22 @@ export default function TasksPage() {
                                     <h3 className={`font-bold text-[#111827] ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</h3>
                                     <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mt-1">
                                         <span className={`px-2 py-0.5 rounded-md ${task.priority === 'High' ? 'bg-red-100 text-red-600' :
-                                                task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'
+                                            task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'
                                             }`}>{task.priority}</span>
                                         <span>• Due {task.due}</span>
                                         <span>• {task.type}</span>
                                     </div>
                                 </div>
                             </div>
-                            <button className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="material-symbols-outlined">delete</span>
-                            </button>
+                            <div className="relative group/actions">
+                                <button className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                                    <span className="material-symbols-outlined">more_vert</span>
+                                </button>
+                                <div className="absolute right-0 top-8 w-32 bg-white rounded-lg shadow-xl border border-gray-100 hidden group-hover/actions:block z-10">
+                                    <button onClick={() => alert('Edit feature coming soon')} className="w-full text-left px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50">Edit</button>
+                                    <button onClick={() => { if (confirm('Delete this task?')) alert('Task deleted'); }} className="w-full text-left px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50">Delete</button>
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </div>

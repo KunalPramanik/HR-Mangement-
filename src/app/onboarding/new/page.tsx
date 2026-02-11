@@ -69,6 +69,27 @@ export default function NewEmployeePage() {
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-bold text-gray-700">Phone Number</label>
+                            <input type="tel" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] font-medium text-gray-700" placeholder="+1 (555) 000-0000" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-bold text-gray-700">Work Location</label>
+                            <select className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] font-medium text-gray-700">
+                                <option>Headquarters (NY)</option>
+                                <option>Remote</option>
+                                <option>London Office</option>
+                                <option>Berlin Hub</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-bold text-gray-700">Reporting Manager</label>
+                        <input type="text" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] font-medium text-gray-700" placeholder="e.g. Sarah Jenkins" />
+                    </div>
+
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-bold text-gray-700">Start Date</label>
                         <input type="date" required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3b82f6] font-medium text-gray-700" />
