@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function NewEmployeePage() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
     const [managers, setManagers] = useState([
         { id: '101', name: 'Sarah Jenkins', role: 'Director of Engineering' },
         { id: '102', name: 'James Wilson', role: 'Product Lead' },
