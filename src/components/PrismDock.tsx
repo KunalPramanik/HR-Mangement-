@@ -29,7 +29,7 @@ export default function PrismDock() {
                         <div className="size-8 rounded-lg bg-[#3b82f6] flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
                             <span className="material-symbols-outlined text-[20px]">diamond</span>
                         </div>
-                        <span className="font-extrabold text-lg text-[#111827] tracking-tight">PRISMDOCK</span>
+                        <span className="font-extrabold text-lg text-[#111827] tracking-tight">MINDSTAR TECH</span>
                     </div>
 
                     {/* Navigation */}
@@ -110,7 +110,7 @@ export default function PrismDock() {
                     <div className="size-8 rounded-lg bg-[#3b82f6] flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
                         <span className="material-symbols-outlined text-[20px]">diamond</span>
                     </div>
-                    <span className="font-extrabold text-lg text-[#111827] tracking-tight">PRISMDOCK</span>
+                    <span className="font-extrabold text-lg text-[#111827] tracking-tight">MINDSTAR TECH</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <button className="size-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">

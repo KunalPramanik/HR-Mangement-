@@ -1,120 +1,105 @@
-# Mindstar HR Portal - Comprehensive Project Report
+# Mindstar Technology - Enterprise HRMS Project Report
 
-**Version:** 2.1
+**Version:** 3.0 (Enterprise Edition)
 **Date:** February 12, 2026
-**Status:** In Development (Advanced Phase)
+**Status:** In Development (Enterprise Expansion Phase)
 
 ---
 
 ## 1. Executive Summary
-**Mindstar HR Portal** is an enterprise-grade Human Resource Management System (HRMS) designed to modernize workforce management. It moves beyond simple data entry to provide intelligent, automated, and secure HR operations. The platform integrates core HR functions—Attendance, Leave, Payroll, and Performance—into a unified "Soft-UI" glassmorphism interface, ensuring a premium user experience.
-
-Recent updates have introduced advanced capabilities including an **AI HR Assistant**, **Geolocation-verified Attendance**, **Asset Lifecycle Management**, and comprehensive **Security Audit Logging**.
+**Mindstar Technology HRMS** is a next-generation, enterprise-grade Human Resource Management System. It has evolved from a standard HR portal into a comprehensive platform that handles the entire employee lifecycle—from recruitment and complex onboarding to asset management, payroll, and compliance. The system uses a "Soft-UI" glassmorphism design language ("Prism") to provide a futuristic and premium user experience.
 
 ---
 
-## 2. Technology Stack
+## 2. Platform Architecture
 
-### Frontend & Core
-*   **Framework:** Next.js 15 (App Router) - Utilizing Server Components for performance.
-*   **Language:** TypeScript - For strict type safety across the entire application.
-*   **Styling:** Tailwind CSS - Custom "Prism Soft-UI" design system with glassmorphism effects.
-*   **State Management:** React Hooks (`useState`, `useEffect`, `useContext`) & Server Actions.
-
-### Backend & Database
-*   **API:** Next.js API Routes (Serverless functions).
-*   **Database:** MongoDB - Scalable NoSQL storage for flexible schemas (e.g., dynamic asset attributes).
-*   **ORM:** Mongoose - Schema validation and business logic hooks.
-*   **Authentication:** NextAuth.js v4 - Secure session management with Role-Based Access Control (RBAC).
-
-### Key Libraries
-*   **UI/UX:** `sonner` (Toasts), `Material Symbols` (Iconography).
-*   **Utilities:** `date-fns` (Date logic), `zod` (Validation).
-*   **Security:** `bcryptjs` (Hashing).
+### Technology Stack
+*   **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS.
+*   **Backend:** Next.js Server Actions & API Routes.
+*   **Database:** MongoDB (Scalable NoSQL).
+*   **Auth:** NextAuth.js v4 (RBAC logic).
+*   **Design System:** Mindstar Prism (Glassmorphism, minimalistic, motion-rich).
 
 ---
 
-## 3. System Modules & Data Schema
+## 3. Comprehensive Module Breakdown & Data Fields
 
-### A. User Management (Core)
-The central repository of employee data.
-*   **Primary Interface:** `/directory` (Grid View), `/profile` (Detailed View).
-*   **Key Fields:**
-    *   **Identity:** `employeeId` (Unique), `email`, `password` (Hashed), `role`.
-    *   **Personal:** `firstName`, `lastName`, `dateOfBirth`, `phoneNumber`, `address`, `emergencyContact`.
-    *   **Professional:** `department`, `position`, `managerId` (Reporting manager), `hireDate`, `workLocation`.
-    *   **Financial:** `salaryInfo` (CTC, Basic, HRA), `bankInfo` (Account, IFSC), `statutoryInfo` (PAN, UAN).
-    *   **Settings:** `geoRestrictionEnabled` (Boolean), `webauthnLoginToken` (Biometric).
+### A. Core User Management
+The central repository for all employee data.
+*   **Primary Interface:** `/directory`, `/profile`.
+*   **Data Fields:**
+    *   **Identity:** `Employee ID` (Unique), `Email` (Corp), `Role` (Admin/HR/Manager/Employee).
+    *   **Personal:** `First Name`, `Last Name`, `Phone`, `Address`, `Emergency Contact`.
+    *   **Status:** `Active`, `Resigned`, `Terminated`, `Probation`.
 
-### B. Onboarding Module
-Streamlines the addition of new talent to the organization.
-*   **Primary Interface:** `/onboarding/new` (Form Wizard).
-*   **Form Fields:**
-    *   **Basic:** First Name, Last Name, Work Email.
-    *   **Role Details:** Department (Dropdown), Role/Title, Start Date.
-    *   **Logistics:** Work Location (Remote/Office), Reporting Manager.
-    *   **Contact:** Phone Number.
+### B. Enterprise Onboarding (NEW)
+A robust, multi-stage onboarding workflow designed for compliance and operational readiness.
+*   **Primary Interface:** `/onboarding/new` (Wizard Form).
+*   **Key Data Sections:**
+    1.  **Personal Information:**
+        *   `First Name`, `Last Name`, `Work Email`
+        *   `Phone Number`, `Gender`, `Marital Status`
+    2.  **Employment Details:**
+        *   `Join Date`, `Designation/Role`
+        *   `Employment Type` (Full-Time, Contract, Intern, Consultant)
+        *   `Probation Period` (None, 3 Months, 6 Months)
+        *   `Work Mode` (On-Site, Hybrid, Remote)
+        *   `Shift Type` (General, Rotational, Night)
+    3.  **Organization Mapping:**
+        *   `Department` (Engineering, Sales, HR, etc.)
+        *   `Work Location` (HQ, London, Remote Hubs)
+        *   `Reporting Manager` (Dynamic Dropdown linked to User DB)
+    4.  **Compensation Structure:**
+        *   `Annual CTC`, `Basic Salary`, `Variable Pay %`
+        *   `PF Eligible` (Yes/No), `TDS Applicable` (Yes/No), `Bonus Eligible` (Yes/No)
 
-### C. Attendance & Geolocation
-Smart tracking of employee work hours with location verification.
-*   **Primary Interface:** `/dashboard` (Clock-in Widget).
+### C. Asset Lifecycle Management
+Tracks hardware and software assets from procurement to retirement.
+*   **Primary Interface:** `/assets`.
+*   **Data Fields:**
+    *   `Asset ID`, `Name`, `Serial Number`, `Type` (Laptop/Mobile/Furniture).
+    *   `Status` (Available, Assigned, Maintenance, Retired).
+    *   `Assignment History` (User, Date), `Condition` (New/Good/Fair).
+*   **Actions:** Scan (Barcode simulation), Add Asset, Reassign.
+
+### D. Attendance & Geolocation
+Smart attendance tracking with location enforcement.
+*   **Primary Interface:** `/dashboard` (Clock-In Widget).
 *   **Features:**
-    *   **Geolocation:** Verifies user coordinates against allowed office radius (`workLocation`).
-    *   **Status Toggles:** On Duty / Break / Off Duty.
-    *   **Visual Indicators:** "Location Verified" (Green) / "Location Error" (Red).
-
-### D. Asset Management (New)
-Full lifecycle tracking of company hardware and software licenses.
-*   **Primary Interface:** `/assets` (List & Grid Views).
-*   **Key Fields:**
-    *   **Identification:** `assetId`, `name`, `serialNumber`, `type` (Laptop, Mobile, Furniture).
-    *   **Status:** `Available`, `Assigned`, `Maintenance`, `Retired`.
-    *   **Assignment:** `assignedTo` (User), `assignedDate`.
-    *   **Condition:** New, Good, Fair, Poor.
+    *   **Geolocation Verification:** Validates user coordinates against office radius.
+    *   **Status:** On Duty, Break, Off Duty.
+    *   **Logs:** Check-in Time, Check-out Time, Location Status.
 
 ### E. Leave Management
-Automated workflow for leave requests and approvals.
-*   **Primary Interface:** `/leave/request` (Employee), `/approvals/leaves` (Manager).
-*   **Key Fields:**
-    *   **Request:** `leaveType` (Annual, Sick, Unpaid), `startDate`, `endDate`, `reason`.
-    *   **Logic:** `totalDays` calculation, `attachments` (Medical certs).
-    *   **Workflow:** `status` (Pending/Approved/Rejected), `approverId`, `approverComments`.
+Automated leave workflows.
+*   **Data Fields:**
+    *   `Leave Type` (Annual, Sick, Unpaid), `Start Date`, `End Date`.
+    *   `Reason`, `Status` (Pending/Approved), `Approver Comments`.
+    *   `Attachments` (Medical Certificates).
 
-### F. Tasks & Productivity
-Lightweight task management for daily operations.
-*   **Primary Interface:** `/tasks` (Kanban/List).
-*   **Key Fields:** `title`, `description`, `dueDate`, `priority` (High/Med/Low), `status`.
-*   **Features:** Interactive "Complete" toggle, Edit/Delete actions.
-
-### G. Security & Audit Logs (New)
-Compliance trail for system administrators.
+### F. Security & Audit Logs
+A compliance trail for all critical system actions.
 *   **Primary Interface:** `/admin/audit-logs`.
-*   **Key Fields:** `timestamp`, `user` (Actor), `action` (CREATE_USER, PAYROLL_RUN), `target` (Affected Entity), `ipAddress`.
-*   **Search:** Full-text search across logs.
+*   **Data Fields:**
+    *   `Timestamp`, `Actor` (User who performed action).
+    *   `Action Type` (CREATE_USER, PAYROLL_RUN, LOGIN_FAIL).
+    *   `Target Entity`, `IP Address`.
+
+### G. AI Assistant (Mindstar AI)
+An embedded chatbot helper.
+*   **Capabilities:** Answer queries on leave balance, policy, and HR contacts.
+*   **Technology:** Keyword-based simulation (Upgrade to RAG planned).
 
 ---
 
-## 4. Key Unique Features
-
-1.  **AI HR Assistant:**
-    *   A floating chatbot on the dashboard (`AiAssistant.tsx`) that answers employee queries about policies and leave balances instantly.
-    *   *Simulated Intelligence:* Provides context-aware responses based on keywords.
-
-2.  **Geolocation Enforcement:**
-    *   Prevents "Clock In" actions unless the browser successfully verifies coordinates, ensuring secure remote/on-site attendance.
-
-3.  **"Prism" Design System:**
-    *   A custom visual language using soft shadows, rounded corners (`rounded-3xl`), and translucent glass backgrounds, setting it apart from standard bootstrap-style HR apps.
-
----
-
-## 5. Future Roadmap
+## 4. Future Enterprise Roadmap
 
 | Phase | Feature | Description |
 | :--- | :--- | :--- |
-| **Q2 2026** | **Biometric Login** | Replaces passwords with WebAuthn/Passkeys (Fingerprint/FaceID). |
-| **Q3 2026** | **Payroll Automation** | 1-Click processing with integration to Bank APIs for direct deposits. |
-| **Q4 2026** | **Advanced Analytics** | PowerBI-style dashboards for attrition prediction and engagement metrics. |
+| **Q2 2026** | **Biometric Auth** | WebAuthn/Passkey integration for passwordless login. |
+| **Q3 2026** | **Automated Payroll** | 1-Click salary processing with bank integration. |
+| **Q4 2026** | **Performance Mgmt** | OKR/KPI tracking and 360-degree feedback cycles. |
+| **2027** | **Mobile App** | Native iOS/Android app for field employees. |
 
 ---
-*Generated by Mindstar Development Team*
+*Generated by Mindstar Technology Development Team*

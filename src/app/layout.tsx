@@ -4,8 +4,8 @@ import { Providers } from "./providers";
 import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Mindstar HR Portal",
-  description: "Employee management and HR portal for Mindstar Technology",
+  title: "Mindstar Technology - Advanced HRMS",
+  description: "Enterprise-grade Human Resource Management System by Mindstar Technology",
   manifest: "/manifest.json",
   icons: { apple: "/icons/icon-192x192.png" },
   themeColor: "#135bec",
