@@ -198,7 +198,7 @@ export default function DashboardPage() {
             {/* AI Assistant Toggle */}
             <button
                 onClick={() => setShowAi(!showAi)}
-                className="fixed bottom-24 right-6 md:bottom-32 md:right-8 z-50 size-14 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform animate-bounce-slow"
+                className="fixed bottom-24 right-6 md:bottom-32 md:right-8 z-50 size-14 rounded-full bg-linear-to-tr from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform animate-bounce-slow"
             >
                 <span className="material-symbols-outlined text-[28px]">{showAi ? 'close' : 'auto_awesome'}</span>
             </button>
@@ -211,7 +211,7 @@ export default function DashboardPage() {
 
             {/* Toast Notification */}
             {showToast && (
-                <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full shadow-lg font-bold text-white animate-scaleUp ${showToast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+                <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-100 px-6 py-3 rounded-full shadow-lg font-bold text-white animate-scaleUp ${showToast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
                     {showToast.msg}
                 </div>
             )}
@@ -517,9 +517,9 @@ export default function DashboardPage() {
                                     <span className="material-symbols-outlined text-gray-400">task_alt</span>
                                     New Task
                                 </Link>
-                                <Link href="/onboarding/new" className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+                                <Link href="/hr/employees/add" className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
                                     <span className="material-symbols-outlined text-gray-400">person_add</span>
-                                    Add Report
+                                    Add Employee
                                 </Link>
                             </div>
                         )}

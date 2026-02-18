@@ -80,7 +80,7 @@ export default function DirectoryPage() {
                 </div>
 
                 {['hr', 'admin', 'director', 'vp', 'cxo', 'cho'].includes(session?.user?.role || '') && (
-                    <Link href="/onboarding/new" className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors">
+                    <Link href="/hr/employees/add" className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors">
                         <span className="material-symbols-outlined text-[20px]">person_add</span>
                         New Employee
                     </Link>
@@ -157,7 +157,7 @@ export default function DirectoryPage() {
                                 {emp.profilePicture ? (
                                     <img src={emp.profilePicture} alt={emp.firstName} className="size-20 rounded-2xl object-cover shadow-lg shadow-blue-500/20" />
                                 ) : (
-                                    <div className="size-20 rounded-2xl bg-gradient-to-br from-[#3b82f6] to-[#2563eb] flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30">
+                                    <div className="size-20 rounded-2xl bg-linear-to-br from-[#3b82f6] to-[#2563eb] flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30">
                                         {emp.firstName?.[0]}{emp.lastName?.[0]}
                                     </div>
                                 )}

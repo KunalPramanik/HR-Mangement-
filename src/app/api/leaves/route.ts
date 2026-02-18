@@ -67,7 +67,7 @@ export async function POST(req: Request) {
             reason: data.reason,
             totalDays: (new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 3600 * 24), // Simple logic
             status: 'Pending',
-            currentApproverId: session.user.managerId // Requires managerId in session
+            currentApproverId: (session.user as any).managerId // Requires managerId in session
         });
 
         await leave.save();

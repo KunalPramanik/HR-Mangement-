@@ -15,25 +15,36 @@ export interface IUser extends Document {
     // 1.2 RBAC & Roles
     role: 'employee' | 'manager' | 'hr' | 'admin' | 'cho' | 'cxo' | 'director' | 'vp' | 'intern' | 'cfo';
     roleId?: mongoose.Types.ObjectId;
+    accessApprovalStatus: 'Pending' | 'Approved' | 'Rejected';
+    softwareAccess?: string[];
 
-    // 3.1 Personal Information
+    // 2. Basic Personal Information
     firstName: string;
     middleName?: string;
     lastName: string;
+    fatherName?: string;
+    motherName?: string;
+
     gender?: 'Male' | 'Female' | 'Other';
     dateOfBirth?: Date;
     maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
     bloodGroup?: string;
     nationality?: string;
-    aadhaar?: string; // Encrypted
+
+    // Identity
+    aadhaar?: string;
+    pan?: string;
     passportDetails?: {
         number: string;
         expiryDate: Date;
     };
+    governmentIdType?: string;
+    governmentIdNumber?: string;
+
     profilePicture?: string;
     coverPhoto?: string;
 
-    // 3.2 Contact Information
+    // 3. Contact Information
     phoneNumber?: string;
     personalEmail?: string;
     officialEmail?: string;
@@ -45,7 +56,7 @@ export interface IUser extends Document {
         phoneNumber: string;
     };
 
-    // 3.3 Job Details
+    // 4. Job Details
     position: string;
     department: string;
     businessUnit?: string;
@@ -53,7 +64,7 @@ export interface IUser extends Document {
     hrManagerId?: mongoose.Types.ObjectId;
 
     employeeType: 'Full-time' | 'Part-time' | 'Contract' | 'Intern' | 'Freelance';
-    employmentStatus: 'active' | 'resigned' | 'terminated' | 'probation' | 'notice_period' | 'internship_completed' | 'suspended';
+    employmentStatus: 'Active' | 'On Leave' | 'Terminated' | 'Resigned' | 'Probation' | 'Notice Period' | 'Suspended';
     suspensionReason?: string;
 
     dateOfJoining: Date;
@@ -63,6 +74,7 @@ export interface IUser extends Document {
     // Location & Shift
     workLocationId?: mongoose.Types.ObjectId;
     workLocation?: {
+        name?: string;
         latitude: number;
         longitude: number;
         radiusMeters: number;
@@ -71,11 +83,12 @@ export interface IUser extends Document {
     grade?: string;
     costCenter?: string;
 
-    // 3.4 Compensation Details (ENCRYPTED FIELDS - String)
+    // 5. Compensation Details
     salaryInfo?: {
         ctc: string;
         basic: string;
         hra: string;
+        allowances?: string;
         da: string;
         pf: string;
         esi: string;
@@ -95,21 +108,22 @@ export interface IUser extends Document {
     statutoryInfo?: {
         pan: string;
         uan?: string;
-        esicNum?: string;
+        pfNumber?: string;
+        esiNumber?: string;
+        esicNum?: string; // Legacy field
+        taxDeclarationStatus?: 'Pending' | 'Submitted' | 'Verified';
         pfEnabled: boolean;
     };
 
-    // 3.5 Document Management
-    documents?: {
-        name: string;
-        type: string;
-        url: string;
-        expiryDate?: Date;
-        uploadedAt?: Date;
+    // 6. Educational Details
+    education?: {
+        qualification: string;
+        institution: string;
+        yearOfPassing: string;
+        grade?: string;
+        scanUrl?: string;
     }[];
 
-    // Capabilities & Skills
-    skills?: string[];
     certifications?: {
         name: string;
         issuer: string;
@@ -117,13 +131,58 @@ export interface IUser extends Document {
         expiryDate?: Date;
         url?: string;
     }[];
+    skills?: string[];
+
+    // 7. Previous Employment
+    previousEmployment?: {
+        companyName: string;
+        designation: string;
+        startDate: Date;
+        endDate: Date;
+        lastDrawnSalary?: string;
+        reasonForLeaving?: string;
+        experienceLetterUrl?: string;
+        verified?: boolean;
+    }[];
+
+    // 8. Documents
+    documents?: {
+        name: string;
+        type: string;
+        url: string;
+        expiryDate?: Date;
+        uploadedAt?: Date;
+        verificationStatus?: 'Pending' | 'Verified' | 'Rejected';
+    }[];
+
+    // 9. Emergency & Compliance
+    medicalConditions?: string;
+    backgroundVerification?: {
+        status: 'Pending' | 'In Progress' | 'Clear' | 'Failed' | 'Not Required';
+        agencyName?: string;
+        reportUrl?: string;
+        completionDate?: Date;
+    };
+    policeVerification?: {
+        status: 'Pending' | 'Clear' | 'Failed' | 'Not Required';
+        referenceNumber?: string;
+    };
+
+    assets?: {
+        assetId: string;
+        type: string;
+        name: string;
+        allocatedDate: Date;
+        returnDate?: Date;
+        status: 'Allocated' | 'Returned' | 'Lost' | 'Damaged';
+    }[];
 
     // Job History / Audit
     jobHistory?: {
         changeDate: Date;
         fieldChanged: string;
-        oldValue: string | number;
-        newValue: string | number;
+        oldValue: string | number | any;
+        newValue: string | number | any;
         reason?: string;
         updatedBy?: mongoose.Types.ObjectId;
     }[];
@@ -148,35 +207,49 @@ const UserSchema = new Schema<IUser>(
         organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
         tenantId: { type: Schema.Types.ObjectId, ref: 'Organization' },
 
-        employeeId: { type: String, required: true, trim: true },
+        // 1. Core Identity & Access
+        employeeId: { type: String, required: true, trim: true, unique: true }, // Auto-generated ideal but explicit here
         email: { type: String, required: true, unique: true, lowercase: true, trim: true },
         password: { type: String, required: true },
 
+        // 1.2 Role & Permissions (RBAC)
         role: {
             type: String,
             enum: ['employee', 'manager', 'hr', 'intern', 'admin', 'cho', 'cxo', 'director', 'vp', 'cfo'],
             default: 'employee',
         },
         roleId: { type: Schema.Types.ObjectId, ref: 'Role' },
+        accessApprovalStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Approved' },
+        softwareAccess: [String], // List of software tools access required/granted
 
+        // 2. Basic Personal Information (Mandatory)
         firstName: { type: String, required: true, trim: true },
         middleName: { type: String, trim: true },
         lastName: { type: String, required: true, trim: true },
+        fatherName: { type: String, trim: true },
+        motherName: { type: String, trim: true },
 
         gender: { type: String, enum: ['Male', 'Female', 'Other'] },
         dateOfBirth: Date,
+        nationality: String,
         maritalStatus: { type: String, enum: ['Single', 'Married', 'Divorced', 'Widowed'] },
         bloodGroup: String,
-        nationality: String,
-        aadhaar: String,
+
+        // Identity Documents
+        aadhaar: String, // Government ID Number (Generic field usage or specific)
+        pan: String,     // Tax ID
         passportDetails: {
             number: String,
             expiryDate: Date
         },
+        governmentIdType: { type: String, default: 'Aadhaar' }, // To specify which ID is stored if not strictly Aadhaar
+        governmentIdNumber: String, // If not using specific fields above
+
         profilePicture: String,
         coverPhoto: String,
 
-        phoneNumber: String,
+        // 3. Contact Information
+        phoneNumber: String, // Mobile Number
         personalEmail: String,
         officialEmail: String,
         currentAddress: String,
@@ -187,44 +260,48 @@ const UserSchema = new Schema<IUser>(
             phoneNumber: String,
         },
 
-        position: { type: String, required: true },
+        // 4. Job & Employment Details (Core HR)
+        position: { type: String, required: true }, // Job Title / Designation
         department: { type: String, required: true },
         businessUnit: String,
-        managerId: { type: Schema.Types.ObjectId, ref: 'User' },
+        managerId: { type: Schema.Types.ObjectId, ref: 'User' }, // Reporting Manager
         hrManagerId: { type: Schema.Types.ObjectId, ref: 'User' },
 
         employeeType: { type: String, enum: ['Full-time', 'Part-time', 'Contract', 'Intern', 'Freelance'], default: 'Full-time' },
         employmentStatus: {
             type: String,
-            enum: ['active', 'resigned', 'terminated', 'probation', 'notice_period', 'internship_completed', 'suspended'],
-            default: 'active'
+            enum: ['Active', 'On Leave', 'Terminated', 'Resigned', 'Probation', 'Notice Period', 'Suspended'],
+            default: 'Active'
         },
         suspensionReason: String,
 
         dateOfJoining: { type: Date, required: true },
-        probationPeriod: Number,
+        probationPeriod: { type: Number, default: 0 }, // in months
         confirmationDate: Date,
 
         workLocationId: { type: Schema.Types.ObjectId, ref: 'Organization.locations' },
-        workLocation: {
+        workLocation: { // Snapshot or Override
+            name: String,
             latitude: Number,
             longitude: Number,
             radiusMeters: Number,
         },
-        shiftType: String,
-        grade: String,
+        shiftType: String, // Shift Details
+        grade: String,     // Band/Grade
         costCenter: String,
 
+        // 5. Compensation Details (Critical)
         salaryInfo: {
-            ctc: { type: String },
+            ctc: { type: String }, // Cost to Company
             basic: { type: String },
             hra: { type: String },
+            allowances: { type: String }, // Generic allowances
             da: { type: String },
-            pf: { type: String },
+            pf: { type: String }, // PF Number usually stored in statutory
             esi: { type: String },
             pt: { type: String },
             specialAllowance: { type: String },
-            bonus: { type: String },
+            bonus: { type: String }, // Bonus Structure
             deductions: { type: String },
             netSalary: { type: String }
         },
@@ -238,27 +315,74 @@ const UserSchema = new Schema<IUser>(
         },
 
         statutoryInfo: {
-            pan: { type: String },
-            uan: { type: String },
-            esicNum: { type: String },
+            pan: { type: String }, // PAN Number
+            uan: { type: String }, // Universal Account Number
+            pfNumber: { type: String },
+            esiNumber: { type: String },
+            taxDeclarationStatus: { type: String, enum: ['Pending', 'Submitted', 'Verified'], default: 'Pending' },
             pfEnabled: { type: Boolean, default: true }
         },
 
-        documents: [{
-            name: String,
-            type: String,
-            url: String,
-            expiryDate: Date,
-            uploadedAt: { type: Date, default: Date.now }
+        // 6. Educational Details
+        education: [{
+            qualification: String, // Highest Qualification, Degree Name
+            institution: String,   // University / Institution
+            yearOfPassing: String,
+            grade: String,         // Percentage / CGPA
+            scanUrl: String        // Document link if separate
         }],
 
-        skills: [String],
         certifications: [{
             name: String,
             issuer: String,
             date: Date,
             expiryDate: Date,
             url: String
+        }],
+        skills: [String],
+
+        // 7. Previous Employment (If Experienced Hire)
+        previousEmployment: [{
+            companyName: String,
+            designation: String,
+            startDate: Date,
+            endDate: Date,
+            lastDrawnSalary: String,
+            reasonForLeaving: String,
+            experienceLetterUrl: String, // "Experience Letter Uploaded" check
+            verified: { type: Boolean, default: false }
+        }],
+
+        // 8. Documents Upload Section
+        documents: [{
+            name: String, // e.g., "Resume", "Offer Letter"
+            type: { type: String, enum: ['Resume', 'ID Proof', 'Address Proof', 'Education', 'Offer Letter', 'Appointment Letter', 'NDA', 'Contract', 'Cheque', 'Photo', 'Other'] },
+            url: String,
+            expiryDate: Date,
+            uploadedAt: { type: Date, default: Date.now },
+            verificationStatus: { type: String, enum: ['Pending', 'Verified', 'Rejected'], default: 'Pending' }
+        }],
+
+        // 9. Emergency & Compliance + System
+        medicalConditions: String, // Optional but useful
+        backgroundVerification: {
+            status: { type: String, enum: ['Pending', 'In Progress', 'Clear', 'Failed', 'Not Required'], default: 'Pending' },
+            agencyName: String,
+            reportUrl: String,
+            completionDate: Date
+        },
+        policeVerification: {
+            status: { type: String, enum: ['Pending', 'Clear', 'Failed', 'Not Required'], default: 'Pending' },
+            referenceNumber: String
+        },
+
+        assets: [{
+            assetId: String, // Laptop / Asset ID
+            type: String,    // Laptop, Phone, etc.
+            name: String,
+            allocatedDate: Date,
+            returnDate: Date,
+            status: { type: String, enum: ['Allocated', 'Returned', 'Lost', 'Damaged'] }
         }],
 
         jobHistory: [{
@@ -285,14 +409,13 @@ const UserSchema = new Schema<IUser>(
     }
 );
 
-UserSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function () {
+    if (!this.isModified('password')) return;
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();
     } catch (error: any) {
-        next(error);
+        throw new Error(error);
     }
 });
 

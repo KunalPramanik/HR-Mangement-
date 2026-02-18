@@ -13,10 +13,24 @@ export default function LeaveRequestPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast.success('Leave Request Submitted Successfully');
-        setFormData({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
+        try {
+            const res = await fetch('/api/leave/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success('Leave Request Submitted Successfully');
+                setFormData({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
+            } else {
+                toast.error(data.error || 'Failed to submit request');
+            }
+        } catch (error) {
+            toast.error('Something went wrong');
+        }
     };
 
     return (

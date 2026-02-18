@@ -72,23 +72,69 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-    // Keep existing POST logic if needed, but for now focusing on PUT
-    // I'll reimplement basic POST to avoid breaking existing functionality
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
-        if (!session || !['admin', 'hr'].includes(session.user.role)) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        if (!session || !['admin', 'hr', 'director', 'vp', 'cho'].includes(session.user.role)) {
+            return NextResponse.json({ error: 'Unauthorized. Only HR/Admins can create employees.' }, { status: 403 });
         }
-        const data = await req.json();
-        const existing = await User.findOne({ email: data.email });
-        if (existing) return NextResponse.json({ error: 'Email exists' }, { status: 400 });
 
-        const user = new User({ ...data, organizationId: session.user.organizationId });
+        const data = await req.json();
+
+        // 1. Check Duplicates
+        const existingEmail = await User.findOne({ email: data.email });
+        if (existingEmail) return NextResponse.json({ error: 'Email already exists in system.' }, { status: 400 });
+
+        const existingEmpId = data.employeeId ? await User.findOne({ employeeId: data.employeeId }) : null;
+        if (existingEmpId) return NextResponse.json({ error: 'Employee ID already exists.' }, { status: 400 });
+
+        // 2. Generate Default Password (if not provided)
+        // Format: Firstname@YearOr1234 (Simple default policy)
+        const defaultPassword = data.password || `Welcome@${new Date().getFullYear()}`;
+
+        // 3. Auto-generate Employee ID if missing
+        let finalEmployeeId = data.employeeId;
+        if (!finalEmployeeId) {
+            // Find latest employee ID to increment safely
+            const lastUser = await User.findOne({
+                organizationId: session.user.organizationId,
+                employeeId: { $regex: /^MS-\d{4}-\d{4}$/ }
+            }).sort({ createdAt: -1 });
+
+            let nextNum = 1;
+            if (lastUser && lastUser.employeeId) {
+                const parts = lastUser.employeeId.split('-');
+                if (parts.length === 3) {
+                    nextNum = parseInt(parts[2], 10) + 1;
+                }
+            }
+
+            finalEmployeeId = `MS-${new Date().getFullYear()}-${nextNum.toString().padStart(4, '0')}`;
+        }
+
+        // 4. Create User
+        const user = new User({
+            ...data,
+            organizationId: session.user.organizationId,
+            employeeId: finalEmployeeId,
+            password: defaultPassword, // Will be hashed by pre-save hook
+            createdBy: session.user.id
+        });
+
         await user.save();
-        return NextResponse.json(user, { status: 201 });
+
+        return NextResponse.json({
+            message: 'Employee created successfully',
+            user: {
+                id: user._id,
+                email: user.email,
+                employeeId: user.employeeId
+            }
+        }, { status: 201 });
+
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Create User Error:', error);
+        return NextResponse.json({ error: error.message || 'Failed to create user' }, { status: 500 });
     }
 }
 

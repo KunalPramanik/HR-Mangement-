@@ -10,12 +10,15 @@ export default function AssetManagementPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingAsset, setEditingAsset] = useState<any>(null);
 
+    const [users, setUsers] = useState<any[]>([]); // New State for Users Dropdown
+
     const [formData, setFormData] = useState({
         name: '',
         type: 'Laptop',
         serialNumber: '',
         model: '',
         status: 'Available',
+        assignedTo: '', // New Field
         purchaseDate: '',
         cost: '',
         condition: 'New'
@@ -23,7 +26,18 @@ export default function AssetManagementPage() {
 
     useEffect(() => {
         fetchAssets();
+        fetchUsers(); // Fetch users on mount
     }, [searchTerm]);
+
+    const fetchUsers = async () => {
+        try {
+            const res = await fetch('/api/users');
+            const data = await res.json();
+            setUsers(data && data.users ? data.users : []);
+        } catch (e) {
+            console.error('Failed to fetch users', e);
+        }
+    };
 
     const fetchAssets = async () => {
         try {
@@ -63,6 +77,7 @@ export default function AssetManagementPage() {
                     serialNumber: '',
                     model: '',
                     status: 'Available',
+                    assignedTo: '',
                     purchaseDate: '',
                     cost: '',
                     condition: 'New'
@@ -100,6 +115,7 @@ export default function AssetManagementPage() {
             serialNumber: asset.serialNumber,
             model: asset.model || '',
             status: asset.status,
+            assignedTo: asset.assignedTo?._id || asset.assignedTo || '',
             purchaseDate: asset.purchaseDate ? asset.purchaseDate.split('T')[0] : '',
             cost: asset.cost || '',
             condition: asset.condition || 'New'
@@ -123,6 +139,7 @@ export default function AssetManagementPage() {
                             serialNumber: '',
                             model: '',
                             status: 'Available',
+                            assignedTo: '',
                             purchaseDate: '',
                             cost: '',
                             condition: 'New'
@@ -186,9 +203,9 @@ export default function AssetManagementPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-md text-xs font-bold ${asset.status === 'Available' ? 'bg-green-100 text-green-700' :
-                                                    asset.status === 'Assigned' ? 'bg-blue-100 text-blue-700' :
-                                                        asset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-700' :
-                                                            'bg-red-100 text-red-700'
+                                                asset.status === 'Assigned' ? 'bg-blue-100 text-blue-700' :
+                                                    asset.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-red-100 text-red-700'
                                                 }`}>
                                                 {asset.status}
                                             </span>
@@ -269,6 +286,22 @@ export default function AssetManagementPage() {
                                         {['Available', 'Assigned', 'Maintenance', 'Retired', 'Lost'].map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
+                                {formData.status === 'Assigned' && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Assign To *</label>
+                                        <select
+                                            value={formData.assignedTo}
+                                            onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}
+                                            required
+                                            className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 border-slate-200 outline-none"
+                                        >
+                                            <option value="">Select Employee</option>
+                                            {users.map(u => (
+                                                <option key={u._id} value={u._id}>{u.firstName} {u.lastName} ({u.email})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Condition</label>
                                     <select value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })} className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 border-slate-200 outline-none">

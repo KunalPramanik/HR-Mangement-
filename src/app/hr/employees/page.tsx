@@ -77,7 +77,7 @@ export default function EmployeeConnectPage() {
                         Org Chart
                     </button>
                     <Link
-                        href="/onboarding/new"
+                        href="/hr/employees/add"
                         className="px-6 py-3 rounded-xl bg-[#3b82f6] text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-600 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                     >
                         <span className="material-symbols-outlined">person_add</span>
@@ -146,7 +146,7 @@ export default function EmployeeConnectPage() {
                                     <tr key={emp._id} className="hover:bg-gray-50/50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
-                                                <div className="size-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center font-bold text-blue-600 text-sm overflow-hidden">
+                                                <div className="size-10 rounded-full bg-linear-to-br from-blue-100 to-blue-50 flex items-center justify-center font-bold text-blue-600 text-sm overflow-hidden">
                                                     {emp.profilePicture ? (
                                                         <img src={emp.profilePicture} alt="" className="w-full h-full object-cover" />
                                                     ) : (

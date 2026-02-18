@@ -70,7 +70,7 @@ export default function OrgChartPage() {
                 {node.user.profilePicture ? (
                     <img src={node.user.profilePicture} alt="" className="size-12 rounded-full object-cover border-2 border-white shadow-sm" />
                 ) : (
-                    <div className="size-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                    <div className="size-12 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                         {node.user.firstName?.[0]}{node.user.lastName?.[0]}
                     </div>
                 )}
@@ -94,7 +94,7 @@ export default function OrgChartPage() {
                     <div className="flex gap-8 relative">
                         {/* Horizontal connector bar across children */}
                         {node.children.length > 1 && (
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] h-px bg-gray-300 -z-0"></div>
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] h-px bg-gray-300 z-0"></div>
                         )}
 
                         {/* Render Children Recursively */}
@@ -130,7 +130,7 @@ export default function OrgChartPage() {
                     {node.user.profilePicture ? (
                         <img src={node.user.profilePicture} alt="" className="size-16 rounded-full object-cover border-4 border-white shadow-sm mb-3" />
                     ) : (
-                        <div className="size-16 rounded-full bg-gradient-to-br from-[#3b82f6] to-[#2563eb] flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-sm mb-3">
+                        <div className="size-16 rounded-full bg-linear-to-br from-[#3b82f6] to-[#2563eb] flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-sm mb-3">
                             {node.user.firstName?.[0]}{node.user.lastName?.[0]}
                         </div>
                     )}

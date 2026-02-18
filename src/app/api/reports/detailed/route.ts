@@ -44,13 +44,13 @@ export async function GET(req: Request) {
         const leaveRecords = await Leave.find({
             startDate: { $lte: endOfDay },
             endDate: { $gte: startOfDay },
-            status: { $in: ['approved', 'pending'] }
+            status: { $in: ['Approved', 'Pending'] }
         });
 
         // 4. Merge Data
         const report = employees.map(emp => {
-            const att = attendanceRecords.find(a => a.userId.toString() === emp._id.toString());
-            const leave = leaveRecords.find(l => l.userId.toString() === emp._id.toString());
+            const att = attendanceRecords.find(a => a.employeeId.toString() === emp._id.toString());
+            const leave = leaveRecords.find(l => l.employeeId.toString() === emp._id.toString());
 
             let status = 'Absent';
             let clockIn = null;
@@ -60,16 +60,16 @@ export async function GET(req: Request) {
             let leaveStatus = null;
 
             if (att) {
-                // FSM Logic for Report
-                if (att.status === 'IN_PROGRESS') {
+                // Logic for Report
+                if (!att.checkOut && att.checkIn) {
                     status = 'Working';
                 } else {
                     // Completed
-                    status = att.outcome || 'Present'; // Fallback
+                    status = att.status || 'Present'; // Fallback
                 }
-                clockIn = att.clockIn;
-                clockOut = att.clockOut;
-                totalHours = att.totalHours;
+                clockIn = att.checkIn;
+                clockOut = att.checkOut;
+                totalHours = att.totalWorkHours;
             }
 
             if (leave) {
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
                 // If they clocked in but have leave (e.g. half day), show Working/Present? 
                 // Usually Leave overrides absent.
 
-                if (leave.status === 'approved') {
+                if (leave.status === 'Approved') {
                     status = 'On Leave';
                 } else if (!att) {
                     // Only show Pending Leave if they haven't clocked in (otherwise they are Working)

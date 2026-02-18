@@ -23,7 +23,7 @@ const GlassCard = ({ children, className = '', hoverEffect = false, ...props }: 
             {...props}
         >
             {/* Dynamic Shine Effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-50 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-white/40 via-transparent to-transparent opacity-50 pointer-events-none" />
 
             <div className="relative z-10">
                 {children}

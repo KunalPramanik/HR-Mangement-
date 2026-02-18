@@ -2,785 +2,730 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-
 import { JOB_TITLES } from '@/lib/constants';
+import { toast } from 'sonner';
+
+// Define the steps and their labels
+const STEPS = [
+    { id: 1, label: 'Personal', icon: 'person' },
+    { id: 2, label: 'Contact', icon: 'call' },
+    { id: 3, label: 'Job', icon: 'work' },
+    { id: 4, label: 'Compensation', icon: 'payments' },
+    { id: 5, label: 'Experience', icon: 'school' },
+    { id: 6, label: 'Docs', icon: 'upload_file' },
+    { id: 7, label: 'IT Access', icon: 'security' },
+];
 
 export default function AddEmployeePage() {
     const router = useRouter();
+    const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
-
-    // Form State
-    const [fullName, setFullName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phoneCode, setPhoneCode] = useState('+1');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [department, setDepartment] = useState('');
-    const [position, setPosition] = useState('');
-    const [role, setRole] = useState('');
-    const [managerId, setManagerId] = useState('');
-    const [hrManagerId, setHrManagerId] = useState('');
-    const [managers, setManagers] = useState<any[]>([]);
-    const [hrs, setHrs] = useState<any[]>([]);
-
-    const [address, setAddress] = useState('');
-    const [profilePicture, setProfilePicture] = useState('');
-    const [coverPhoto, setCoverPhoto] = useState('');
-    const [documents, setDocuments] = useState<{ name: string, url: string, type: string }[]>([]);
     const [uploading, setUploading] = useState(false);
 
-    // Payroll State
+    // --- 1. Basic Personal Information ---
+    const [fullName, setFullName] = useState('');
+    const [fatherName, setFatherName] = useState('');
+    const [motherName, setMotherName] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState('');
+    const [gender, setGender] = useState('Male');
+    const [nationality, setNationality] = useState('Indian');
+    const [maritalStatus, setMaritalStatus] = useState('Single');
+    const [bloodGroup, setBloodGroup] = useState('');
+    const [aadhaar, setAadhaar] = useState('');
+    const [pan, setPan] = useState('');
+    const [passportNumber, setPassportNumber] = useState('');
+    const [passportExpiry, setPassportExpiry] = useState('');
+
+    // --- 2. Contact Information ---
+    const [personalEmail, setPersonalEmail] = useState('');
+    const [officialEmail, setOfficialEmail] = useState('');
+    const [phoneCode, setPhoneCode] = useState('+91');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [currentAddress, setCurrentAddress] = useState('');
+    const [permanentAddress, setPermanentAddress] = useState('');
+    const [sameAsCurrent, setSameAsCurrent] = useState(false); // Checkbox state
+    const [emergencyContactName, setEmergencyContactName] = useState('');
+    const [emergencyContactRelation, setEmergencyContactRelation] = useState('');
+    const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
+    const [medicalConditions, setMedicalConditions] = useState('');
+
+    // --- 3. Job & Employment Details ---
+    const [employeeId, setEmployeeId] = useState('');
+    const [department, setDepartment] = useState('');
+    const [position, setPosition] = useState('');
+    const [role, setRole] = useState('employee');
+    const [employeeType, setEmployeeType] = useState('Full-time');
+    const [employmentStatus, setEmploymentStatus] = useState('Active');
+    const [dateOfJoining, setDateOfJoining] = useState(new Date().toISOString().split('T')[0]);
+    const [probationPeriod, setProbationPeriod] = useState(6);
+    const [confirmationDate, setConfirmationDate] = useState('');
+    const [managerId, setManagerId] = useState('');
+    const [hrManagerId, setHrManagerId] = useState('');
+    const [workLocationName, setWorkLocationName] = useState('Head Office');
+    const [workLat, setWorkLat] = useState<number | ''>('');
+    const [workLng, setWorkLng] = useState<number | ''>('');
+    const [workRadius, setWorkRadius] = useState<number>(200);
+    const [geoEnabled, setGeoEnabled] = useState(false);
+    const [shiftType, setShiftType] = useState('General');
+    const [grade, setGrade] = useState('');
+
+    // --- 4. Compensation Details (CTC Breakdown) ---
     const [ctc, setCtc] = useState<number>(0);
     const [basic, setBasic] = useState<number>(0);
     const [hra, setHra] = useState<number>(0);
     const [da, setDa] = useState<number>(0);
-    const [pf, setPf] = useState<number>(1800); // Standard min
-    const [pt, setPt] = useState<number>(200); // Standard
+    const [pf, setPf] = useState<number>(1800);
+    const [pt, setPt] = useState<number>(200);
+    const [specialAllowance, setSpecialAllowance] = useState<number>(0);
     const [deductions, setDeductions] = useState<number>(0);
 
-    // Bank State
+    // --- 5. Bank & Statutory ---
     const [bankName, setBankName] = useState('');
     const [branchName, setBranchName] = useState('');
     const [accountName, setAccountName] = useState('');
     const [accountNumber, setAccountNumber] = useState('');
     const [ifscCode, setIfscCode] = useState('');
-    const [isIfscValid, setIsIfscValid] = useState(false);
+    const [uan, setUan] = useState('');
+    const [esiNumber, setEsiNumber] = useState('');
+    const [pfNumber, setPfNumber] = useState('');
+    const [taxDeclarationStatus, setTaxDeclarationStatus] = useState('Pending');
 
-    // Auto-calculate Split
+    // --- 6. Education & Exp ---
+    const [education, setEducation] = useState<{ qualification: string, institution: string, yearOfPassing: string, grade: string }[]>([
+        { qualification: '', institution: '', yearOfPassing: '', grade: '' }
+    ]);
+    const [experience, setExperience] = useState<{ companyName: string, designation: string, startDate: string, endDate: string, lastSalary: string, reason: string }[]>([]);
+
+    // --- 8. Documents & System ---
+    const [documents, setDocuments] = useState<{ name: string, url: string, type: string }[]>([]);
+    const [profilePicture, setProfilePicture] = useState('');
+    const [softwareAccess, setSoftwareAccess] = useState<string[]>([]);
+
+    // Auxiliary State
+    const [managers, setManagers] = useState<any[]>([]);
+    const [hrs, setHrs] = useState<any[]>([]);
+    const [generatedPassword, setGeneratedPassword] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Load Managers/HRs
     useEffect(() => {
-        if (ctc > 0) {
-            const monthlyCtc = ctc / 12;
-            const newBasic = Math.round(monthlyCtc * 0.50); // 50% of CTC
-            const newHra = Math.round(newBasic * 0.40); // 40% of Basic
-            const newDa = Math.round(monthlyCtc - newBasic - newHra - pf - pt); // Balance
-
-            setBasic(newBasic);
-            setHra(newHra);
-            setDa(newDa > 0 ? newDa : 0);
-        }
-    }, [ctc, pf, pt]);
-
-    // Geo-Fencing State
-    const [workLat, setWorkLat] = useState<number | ''>('');
-    const [workLng, setWorkLng] = useState<number | ''>('');
-    const [workRadius, setWorkRadius] = useState<number>(200);
-    const [geoEnabled, setGeoEnabled] = useState(false);
-
-    const handleGeocode = async () => {
-        if (!address) return;
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-            const data = await res.json();
-            if (data && data.length > 0) {
-                const { lat, lon } = data[0];
-                setWorkLat(parseFloat(lat));
-                setWorkLng(parseFloat(lon));
-                alert(`Location found: ${lat}, ${lon}`);
-
-                // Auto-enable for employees/interns if strictly required
-                if (role === 'employee' || role === 'intern') {
-                    setGeoEnabled(true);
-                }
-            } else {
-                alert('Could not find coordinates for this address.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Failed to geocode address.');
-        }
-    };
-
-    const handleFileUpload = async (file: File, type: 'profile' | 'cover' | 'document') => {
-        if (!file) return;
-        setUploading(true);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                if (type === 'profile') setProfilePicture(data.url);
-                if (type === 'cover') setCoverPhoto(data.url);
-                if (type === 'document') {
-                    setDocuments([...documents, { name: data.filename, url: data.url, type: data.type }]);
-                }
-            } else {
-                alert('Upload failed: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Upload error', error);
-            alert('Upload failed');
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    useEffect(() => {
-        // Fetch potential managers and HRs
         fetch('/api/users')
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
-                    // Filter for Manager
-                    const mgrs = data.filter((u: any) => u.role === 'manager' || u.role === 'director' || u.role === 'vp' || u.role === 'cxo' || u.role === 'cho');
-                    setManagers(mgrs);
-                    // Filter for HR
-                    const hrList = data.filter((u: any) => u.role === 'hr');
-                    setHrs(hrList);
+                    setManagers(data.filter((u: any) => ['manager', 'director', 'vp', 'cxo', 'cho'].includes(u.role)));
+                    setHrs(data.filter((u: any) => u.role === 'hr'));
                 }
             })
             .catch(err => console.error(err));
     }, []);
 
-    // ... (keep handleVerify, confirmOtp same) ... 
+    // Sync Address Logic
+    useEffect(() => {
+        if (sameAsCurrent) {
+            setPermanentAddress(currentAddress);
+        }
+    }, [sameAsCurrent, currentAddress]);
 
-    // (Need to replicate handleVerify/confirmOtp here because I'm replacing a large block that includes them if I don't exclude them carefully. 
-    // Actually, I should probably target specific blocks to avoid re-writing everything.
-    // But since I'm inserting handleFileUpload before useEffect, let me just insert the function and state first.)
+    // Auto-calculate Salary Split
+    useEffect(() => {
+        if (ctc > 0) {
+            const monthlyCtc = ctc / 12;
+            const newBasic = Math.round(monthlyCtc * 0.50);
+            const newHra = Math.round(newBasic * 0.40);
+            const newDa = 0;
+            const balance = monthlyCtc - newBasic - newHra - pf - pt;
+            setBasic(newBasic);
+            setHra(newHra);
+            setDa(newDa);
+            setSpecialAllowance(balance > 0 ? balance : 0);
+        }
+    }, [ctc, pf, pt]);
 
-    // Changing strategy: Only update state and add handleFileUpload first.
+    // Generate Password on load
+    useEffect(() => {
+        setGeneratedPassword(`Mindstar@${new Date().getFullYear()}`);
+    }, []);
 
-
-    const [otpInput, setOtpInput] = useState('');
-    const [otpSent, setOtpSent] = useState<'email' | 'phone' | null>(null);
-    const [isEmailVerified, setIsEmailVerified] = useState(false);
-    const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-
-    const handleVerify = (type: 'email' | 'phone') => {
-        if (type === 'email' && !email) return alert('Please enter email first');
-        if (type === 'phone' && !phoneNumber) return alert('Please enter phone number');
-
-        setOtpSent(type);
-        setOtpInput('');
-        alert(`OTP sent to ${type === 'email' ? email : phoneNumber}. (Demo: Use 1234)`);
+    const handleFileUpload = async (file: File, type: string, customName?: string) => {
+        if (!file) return;
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                if (type === 'profile') setProfilePicture(data.url);
+                else {
+                    setDocuments(prev => [...prev, { name: customName || file.name, url: data.url, type: type }]);
+                    toast.success(`${type} uploaded successfully`);
+                }
+            } else {
+                toast.error('Upload failed: ' + data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Upload failed');
+        } finally {
+            setUploading(false);
+        }
     };
 
-    const confirmOtp = () => {
-        if (otpInput === '1234') {
-            if (otpSent === 'email') setIsEmailVerified(true);
-            if (otpSent === 'phone') setIsPhoneVerified(true);
-            setOtpSent(null);
-            setOtpInput('');
-            alert('Verified successfully!');
+    const handleCurrentLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setWorkLat(position.coords.latitude);
+                    setWorkLng(position.coords.longitude);
+                    toast.success('Location fetched!');
+                },
+                (error) => toast.error('Error fetching location: ' + error.message)
+            );
         } else {
-            alert('Invalid OTP');
+            toast.error("Geolocation is not supported by this browser.");
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!isEmailVerified || !isPhoneVerified) {
-            alert('Please verify both Email and Phone Number before submitting.');
-            return;
+    const validateStep = (step: number) => {
+        if (step === 1) {
+            if (!fullName) return toast.error('Full Name is required');
+            if (dateOfBirth && new Date(dateOfBirth) > new Date()) return toast.error('Date of Birth cannot be in the future');
         }
+        if (step === 2) {
+            if (!officialEmail && !personalEmail) return toast.error('At least one Email is required');
+            if (!phoneNumber) return toast.error('Phone Number is required');
+        }
+        if (step === 3) {
+            if (!department) return toast.error('Department is required');
+            if (!position) return toast.error('Designation is required');
+            if (!dateOfJoining) return toast.error('Date of Joining is required');
+        }
+        return true;
+    };
 
+    const nextStep = () => {
+        if (validateStep(currentStep)) setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+    };
+
+    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+    const handleSubmit = async () => {
         setLoading(true);
+
+        // Filter empty rows
+        const cleanEducation = education.filter(e => e.qualification && e.institution);
+        const cleanExperience = experience.filter(e => e.companyName);
 
         const [firstName, ...lastNameParts] = fullName.split(' ');
         const lastName = lastNameParts.join(' ') || '.';
+
+        const payload = {
+            firstName, lastName,
+            email: officialEmail || personalEmail,
+            password: generatedPassword, // Explicitly sending generated password
+            role,
+            employeeId: employeeId || undefined,
+            fatherName, motherName,
+            gender, dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+            nationality, maritalStatus, bloodGroup,
+            aadhaar,
+            pan,
+            passportDetails: (passportNumber) ? { number: passportNumber, expiryDate: passportExpiry } : undefined,
+            profilePicture,
+            phoneNumber: `${phoneCode} ${phoneNumber}`,
+            personalEmail,
+            officialEmail,
+            currentAddress,
+            permanentAddress,
+            emergencyContact: {
+                name: emergencyContactName,
+                relationship: emergencyContactRelation,
+                phoneNumber: emergencyContactPhone
+            },
+            department, position,
+            employeeType, employmentStatus,
+            dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : undefined,
+            probationPeriod,
+            managerId: managerId || undefined,
+            hrManagerId: hrManagerId || undefined,
+            workLocation: (workLat && workLng) ? {
+                name: workLocationName,
+                latitude: Number(workLat),
+                longitude: Number(workLng),
+                radiusMeters: Number(workRadius)
+            } : undefined,
+            shiftType, grade,
+            geoRestrictionEnabled: geoEnabled,
+            salaryInfo: {
+                ctc: String(ctc),
+                basic: String(basic),
+                hra: String(hra),
+                da: String(da),
+                pf: String(pf),
+                pt: String(pt),
+                specialAllowance: String(specialAllowance),
+                deductions: String(deductions),
+                netSalary: String(basic + hra + da + specialAllowance - pf - pt - deductions)
+            },
+            bankInfo: {
+                bankName, branchName, accountName, accountNumber, ifscCode
+            },
+            statutoryInfo: {
+                pan, uan, pfNumber, esiNumber, taxDeclarationStatus
+            },
+            education: cleanEducation,
+            previousEmployment: cleanExperience,
+            documents,
+            medicalConditions,
+            softwareAccess
+        };
 
         try {
             const res = await fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    firstName,
-                    lastName,
-                    email,
-                    phoneNumber: `${phoneCode} ${phoneNumber}`,
-                    department,
-                    position,
-                    role,
-                    managerId: managerId || undefined,
-                    hrManagerId: hrManagerId || undefined,
-                    address,
-                    profilePicture,
-                    coverPhoto,
-                    documents,
-                    workLocation: (workLat && workLng) ? {
-                        latitude: Number(workLat),
-                        longitude: Number(workLng),
-                        radiusMeters: Number(workRadius)
-                    } : null,
-                    geoRestrictionEnabled: geoEnabled
-                })
+                body: JSON.stringify(payload)
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                alert('Employee successfully added to database!');
-                router.push('/hr/dashboard');
+                // If API returns a generated Employee ID, use it for display
+                if (data.user?.employeeId) setEmployeeId(data.user.employeeId);
+                setShowSuccessModal(true);
             } else {
-                const err = await res.json();
-                alert('Error: ' + err.error);
+                toast.error('Error: ' + data.error);
             }
         } catch (error) {
-            alert('Submission failed');
+            toast.error('Submission failed');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 pb-20">
-            <div className="flex items-center gap-3 mb-6">
-                <button
-                    onClick={() => router.back()}
-                    className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-                >
-                    <span className="material-symbols-outlined text-slate-700 dark:text-slate-200">arrow_back</span>
-                </button>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Add New Employee</h1>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+            {/* Header */}
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 sticky top-0 z-30">
+                <div className="flex items-center justify-between max-w-7xl mx-auto">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                            <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">arrow_back</span>
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">Onboard Employee</h1>
+                            <p className="text-xs text-slate-500 font-medium">Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].label}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Personal Information</h2>
-                    <div className="grid grid-cols-1 gap-4">
-                        <label className="block">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Full Name <span className="text-red-500">*</span></span>
-                            <input
-                                type="text"
-                                required
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                placeholder="John Doe"
-                            />
-                        </label>
+            <div className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full p-4 gap-6">
 
-                        {/* Photo Uploads */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <label className="block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Profile Photo</span>
-                                <div className="mt-1 flex items-center gap-2">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => e.target.files && handleFileUpload(e.target.files[0], 'profile')}
-                                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                    />
-                                </div>
-                                {profilePicture && <p className="text-xs text-green-600 mt-1 truncate">Uploaded ✓</p>}
-                            </label>
-                            <label className="block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Cover Photo</span>
-                                <div className="mt-1 flex items-center gap-2">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => e.target.files && handleFileUpload(e.target.files[0], 'cover')}
-                                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                    />
-                                </div>
-                                {coverPhoto && <p className="text-xs text-green-600 mt-1 truncate">Uploaded ✓</p>}
-                            </label>
-                        </div>
+                {/* Stepper Sidebar */}
+                <div className="w-full md:w-64 flex-shrink-0">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden sticky top-24">
+                        {STEPS.map((step) => (
+                            <button
+                                key={step.id}
+                                onClick={() => validateStep(currentStep) && setCurrentStep(step.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-l-4 ${currentStep === step.id
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-600'
+                                        : 'text-slate-500 dark:text-slate-400 border-transparent hover:bg-slate-50 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                <span className={`material-symbols-outlined text-[20px] ${currentStep === step.id ? 'filled' : ''}`}>{step.icon}</span>
+                                {step.label}
+                                {currentStep > step.id && <span className="material-symbols-outlined text-green-500 text-[16px] ml-auto">check_circle</span>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-                        {/* Address & GPS */}
-                        <div>
-                            <label className="block mb-1">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Address / Location</span>
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    // Auto-geocode on blur if user wants, or just use button
-                                    onBlur={handleGeocode}
-                                    className="flex-1 rounded-lg border border-slate-300 bg-slate-50 p-2.5"
-                                    placeholder="e.g. 123 Main St, NY"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleGeocode}
-                                    className="bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold px-3 rounded-lg flex items-center gap-1"
-                                    title="Convert Address to Coordinates"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">travel_explore</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (navigator.geolocation) {
-                                            navigator.geolocation.getCurrentPosition(
-                                                (pos) => {
-                                                    const { latitude, longitude } = pos.coords;
-                                                    setWorkLat(latitude);
-                                                    setWorkLng(longitude);
-                                                    // Also set address if empty? optional.
-                                                    alert('Current Location Fetched!');
-                                                },
-                                                (err) => alert('Error fetching location: ' + err.message)
-                                            );
-                                        } else {
-                                            alert('Geolocation is not supported by this browser.');
-                                        }
-                                    }}
-                                    className="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold px-3 rounded-lg flex items-center gap-1"
-                                    title="Use Current Device Location"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">my_location</span>
-                                </button>
-                            </div>
-                        </div>
+                {/* Main Form Content */}
+                <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 md:p-8">
 
-                        <div className="border-t pt-4 mt-2">
-                            <h3 className="font-bold text-gray-700 mb-3 dark:text-white">Attendance Restrictions (Geo-Fencing)</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Latitude</label>
-                                    <input
-                                        name="latitude"
-                                        type="number"
-                                        step="any"
-                                        value={workLat}
-                                        onChange={(e) => setWorkLat(parseFloat(e.target.value) || '')}
-                                        placeholder="e.g. 28.6139"
-                                        className="w-full p-2 border rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                    />
+                    {/* Step 1: Personal */}
+                    {currentStep === 1 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">person</span> Personal Details
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input label="Full Legal Name *" value={fullName} onChange={setFullName} required placeholder="As per ID Proof" />
+                                <div className="flex gap-4">
+                                    <Input label="Father's Name" value={fatherName} onChange={setFatherName} />
+                                    <Input label="Mother's Name" value={motherName} onChange={setMotherName} />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Longitude</label>
-                                    <input
-                                        name="longitude"
-                                        type="number"
-                                        step="any"
-                                        value={workLng}
-                                        onChange={(e) => setWorkLng(parseFloat(e.target.value) || '')}
-                                        placeholder="e.g. 77.2090"
-                                        className="w-full p-2 border rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Radius (Meters)</label>
-                                    <input
-                                        name="radius"
-                                        type="number"
-                                        value={workRadius}
-                                        onChange={(e) => setWorkRadius(parseInt(e.target.value) || 200)}
-                                        placeholder="200"
-                                        className="w-full p-2 border rounded-lg border-slate-300 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                    />
-                                </div>
-                                <div className="md:col-span-3 flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        name="geoRestrictionEnabled"
-                                        checked={geoEnabled}
-                                        onChange={(e) => setGeoEnabled(e.target.checked)}
-                                        className="size-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                    />
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Enable Fixed Office Location Restriction (Employees/Interns)</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Email with Verification */}
-                        <div>
-                            <label className="block mb-1">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address <span className="text-red-500">*</span></span>
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => { setEmail(e.target.value); setIsEmailVerified(false); }}
-                                    className={`flex-1 rounded-lg border p-2.5 ${isEmailVerified ? 'border-green-500 bg-green-50' : 'border-slate-300 bg-slate-50'}`}
-                                    placeholder="john@company.com"
-                                />
-                                {isEmailVerified ? (
-                                    <span className="flex items-center text-green-600 px-3 font-bold"><span className="material-symbols-outlined">check_circle</span></span>
-                                ) : (
-                                    <button type="button" onClick={() => handleVerify('email')} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 rounded-lg">Verify</button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Phone with Verification & Flags */}
-                        <div>
-                            <label className="block mb-1">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Phone Number <span className="text-red-500">*</span></span>
-                            </label>
-                            <div className="flex gap-2">
-                                <div className="flex flex-1">
-                                    <select
-                                        value={phoneCode}
-                                        onChange={(e) => setPhoneCode(e.target.value)}
-                                        className="rounded-l-lg border border-r-0 border-slate-300 bg-slate-100 text-slate-700 p-2.5 text-sm focus:ring-[#135bec] focus:border-[#135bec] outline-none min-w-[120px]"
-                                    >
-                                        <option value="+1">🇺🇸 +1</option>
-                                        <option value="+44">🇬🇧 +44</option>
-                                        <option value="+91">🇮🇳 +91</option>
-                                        <option value="+61">🇦🇺 +61</option>
-                                        <option value="+81">🇯🇵 +81</option>
-                                        <option value="+86">🇨🇳 +86</option>
-                                        <option value="+49">🇩🇪 +49</option>
-                                        <option value="+33">🇫🇷 +33</option>
-                                        <option value="+39">🇮🇹 +39</option>
-                                        <option value="+7">🇷🇺 +7</option>
-                                        <option value="+55">🇧🇷 +55</option>
-                                        <option value="+971">🇦🇪 +971</option>
-                                        <option value="+65">🇸🇬 +65</option>
-                                    </select>
-                                    <input
-                                        type="tel"
-                                        required
-                                        value={phoneNumber}
-                                        onChange={(e) => { setPhoneNumber(e.target.value); setIsPhoneVerified(false); }}
-                                        className={`block w-full rounded-r-lg border p-2.5 outline-none ${isPhoneVerified ? 'border-green-500 bg-green-50' : 'border-slate-300 bg-slate-50'}`}
-                                        placeholder="555-123-4567"
-                                    />
-                                </div>
-                                {isPhoneVerified ? (
-                                    <span className="flex items-center text-green-600 px-3 font-bold"><span className="material-symbols-outlined">check_circle</span></span>
-                                ) : (
-                                    <button type="button" onClick={() => handleVerify('phone')} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 rounded-lg">Verify</button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* OTP Modal / Input Area */}
-                        {otpSent && (
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-80">
-                                    <h3 className="text-lg font-bold mb-4 dark:text-white">Enter OTP</h3>
-                                    <p className="text-sm text-slate-500 mb-4">Sent to {otpSent === 'email' ? email : phoneNumber}</p>
-                                    <input
-                                        type="text"
-                                        value={otpInput}
-                                        onChange={(e) => setOtpInput(e.target.value)}
-                                        className="w-full border rounded-lg p-3 text-center text-2xl tracking-widest mb-4"
-                                        placeholder="0000"
-                                        autoFocus
-                                    />
+                                <Input label="Date of Birth" type="date" value={dateOfBirth} onChange={setDateOfBirth} />
+                                <Select label="Gender" value={gender} onChange={setGender} options={['Male', 'Female', 'Other']} />
+                                <Select label="Marital Status" value={maritalStatus} onChange={setMaritalStatus} options={['Single', 'Married', 'Divorced']} />
+                                <Input label="Nationality" value={nationality} onChange={setNationality} />
+                                <Input label="Blood Group" value={bloodGroup} onChange={setBloodGroup} placeholder="O+" />
+                                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 border-dashed">
+                                    <Input label="Aadhaar Number" value={aadhaar} onChange={setAadhaar} placeholder="12 Digit UID" />
+                                    <Input label="PAN Number" value={pan} onChange={setPan} placeholder="Permanent Account Number" />
                                     <div className="flex gap-2">
-                                        <button type="button" onClick={() => setOtpSent(null)} className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold">Cancel</button>
-                                        <button type="button" onClick={confirmOtp} className="flex-1 py-2 bg-[#135bec] text-white rounded-lg font-bold">Confirm</button>
+                                        <Input label="Passport No" value={passportNumber} onChange={setPassportNumber} />
+                                        <Input label="Expiry" type="date" value={passportExpiry} onChange={setPassportExpiry} />
                                     </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Job Details</h2>
-                    <div className="grid grid-cols-1 gap-4">
-                        <label className="block">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Employee ID (Auto-generated)</span>
-                            <input type="text" disabled value="MS-2024-XXXX" className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-100 text-slate-500 p-2.5 cursor-not-allowed" />
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                            <label className="block col-span-2">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Job Title / Position <span className="text-red-500">*</span></span>
-                                <select
-                                    required
-                                    value={position}
-                                    onChange={(e) => {
-                                        const newPosition = e.target.value;
-                                        setPosition(newPosition);
-
-                                        // Auto-select Role based on Position
-                                        const lowerPos = newPosition.toLowerCase();
-                                        if (lowerPos.includes('chief') || lowerPos.includes('cxo') || lowerPos.includes('president') || lowerPos.includes('chairman') || lowerPos.includes('owner')) {
-                                            setRole('cxo');
-                                        } else if (lowerPos.includes('cho') || (lowerPos.includes('head') && lowerPos.includes('hr'))) {
-                                            setRole('cho');
-                                        } else if (lowerPos.includes('vp') || lowerPos.includes('vice president')) {
-                                            setRole('vp');
-                                        } else if (lowerPos.includes('director')) {
-                                            setRole('director');
-                                        } else if (lowerPos.includes('manager') || lowerPos.includes('lead') || lowerPos.includes('head')) {
-                                            setRole('manager');
-                                        } else if (lowerPos.includes('intern') || lowerPos.includes('trainee')) {
-                                            setRole('intern');
-                                        } else if (lowerPos.includes('hr') || lowerPos.includes('human resources')) {
-                                            setRole('hr');
-                                        } else if (lowerPos.includes('admin')) {
-                                            setRole('admin');
-                                        } else {
-                                            setRole('employee');
-                                        }
-                                    }}
-                                    className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                >
-                                    <option value="">Select Position</option>
-                                    {JOB_TITLES.map((title) => (
-                                        <option key={title} value={title}>{title}</option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label className="block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Department <span className="text-red-500">*</span></span>
-                                <select
-                                    required
-                                    value={department}
-                                    onChange={(e) => setDepartment(e.target.value)}
-                                    className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                >
-                                    <option value="">Select Dept</option>
-                                    <option>Engineering</option>
-                                    <option>HR</option>
-                                    <option>Sales</option>
-                                    <option>Marketing</option>
-                                    <option>Finance</option>
-                                    <option>Operations</option>
-                                    <option>Support</option>
-                                </select>
-                            </label>
-                            <label className="block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">System Role <span className="text-red-500">*</span></span>
-                                <select
-                                    required
-                                    value={role}
-                                    onChange={(e) => {
-                                        const r = e.target.value;
-                                        setRole(r);
-                                        // Auto-check geo for employee/intern
-                                        if (r === 'employee' || r === 'intern') {
-                                            setGeoEnabled(true);
-                                        } else {
-                                            setGeoEnabled(false);
-                                        }
-                                    }}
-                                    className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                >
-                                    <option value="">Select Role</option>
-                                    <option value="employee">Employee</option>
-                                    <option value="manager">Manager</option>
-                                    <option value="hr">HR</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="cho">CHO</option>
-                                    <option value="cxo">CXO</option>
-                                    <option value="vp">VP</option>
-                                    <option value="director">Director</option>
-                                    <option value="intern">Intern</option>
-                                </select>
-                            </label>
-
-                            <label className="block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Reporting Manager</span>
-                                <select
-                                    value={managerId}
-                                    onChange={(e) => setManagerId(e.target.value)}
-                                    className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                >
-                                    <option value="">Select Manager</option>
-                                    {managers.map((mgr) => (
-                                        <option key={mgr._id} value={mgr._id}>
-                                            {mgr.firstName} {mgr.lastName} ({mgr.position})
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-
-                            <label className="block">
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Reporting HR</span>
-                                <select
-                                    value={hrManagerId}
-                                    onChange={(e) => setHrManagerId(e.target.value)}
-                                    className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                >
-                                    <option value="">Select HR</option>
-                                    {hrs.map((hr) => (
-                                        <option key={hr._id} value={hr._id}>
-                                            {hr.firstName} {hr.lastName} ({hr.position})
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Payroll Structure (CTC & Breakdown)</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <label className="block md:col-span-2">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Annual CTC <span className="text-red-500">*</span></span>
-                            <div className="relative mt-1">
-                                <span className="absolute left-3 top-2.5 text-slate-400">₹</span>
-                                <input
-                                    type="number"
-                                    required
-                                    value={ctc || ''}
-                                    onChange={(e) => setCtc(parseFloat(e.target.value))}
-                                    className="block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5 pl-8 font-bold text-lg"
-                                    placeholder="600000"
-                                />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">Breakdown is auto-calculated based on 50% Basic rule.</p>
-                        </label>
-
-                        <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">Basic Salary (Monthly)</label>
-                                <input disabled value={basic} className="w-full bg-white dark:bg-slate-600 rounded border p-2 font-bold" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">HRA (40% of Basic)</label>
-                                <input disabled value={hra} className="w-full bg-white dark:bg-slate-600 rounded border p-2 font-bold" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">Special/DA (Balance)</label>
-                                <input disabled value={da} className="w-full bg-white dark:bg-slate-600 rounded border p-2 font-bold" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">Provident Fund (PF)</label>
-                                <input type="number" value={pf} onChange={e => setPf(Number(e.target.value))} className="w-full bg-white dark:bg-slate-600 rounded border p-2 font-bold text-red-500" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">Professional Tax (PT)</label>
-                                <input type="number" value={pt} onChange={e => setPt(Number(e.target.value))} className="w-full bg-white dark:bg-slate-600 rounded border p-2 font-bold text-red-500" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">Other Deductions</label>
-                                <input type="number" value={deductions} onChange={e => setDeductions(Number(e.target.value))} className="w-full bg-white dark:bg-slate-600 rounded border p-2 font-bold text-red-500" />
-                            </div>
-                        </div>
-                        <div className="md:col-span-2 flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg">
-                            <span className="font-bold text-green-800 dark:text-green-300">Net Salary (In Hand)</span>
-                            <span className="text-xl font-extrabold text-green-700 dark:text-green-400">₹{(basic + hra + da - pf - pt - deductions).toLocaleString()}/mo</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Bank Information</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <label className="block">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Account Number</span>
-                            <input
-                                type="text"
-                                value={accountNumber}
-                                onChange={(e) => setAccountNumber(e.target.value)}
-                                className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                placeholder="1234567890"
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">IFSC Code</span>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={ifscCode}
-                                    onChange={(e) => {
-                                        setIfscCode(e.target.value.toUpperCase());
-                                        setIsIfscValid(false); // Reset on change
-                                    }}
-                                    onBlur={async () => {
-                                        if (ifscCode.length === 11) {
-                                            try {
-                                                const res = await fetch(`https://ifsc.razorpay.com/${ifscCode}`);
-                                                if (res.ok) {
-                                                    const data = await res.json();
-                                                    setBankName(data.BANK);
-                                                    setBranchName(data.BRANCH);
-                                                    setIsIfscValid(true);
-                                                    // alert(`Bank Found: ${data.BANK}`);
-                                                } else {
-                                                    setBankName('');
-                                                    setBranchName('');
-                                                    setIsIfscValid(false);
-                                                    alert('Invalid IFSC Code');
-                                                }
-                                            } catch (e) {
-                                                console.error(e);
-                                                alert('Error fetching bank details');
-                                            }
-                                        }
-                                    }}
-                                    className={`mt-1 block w-full rounded-lg border p-2.5 uppercase ${isIfscValid ? 'border-green-500 bg-green-50' : 'border-slate-300 bg-slate-50'}`}
-                                    placeholder="HDFC0001234"
-                                />
-                                {isIfscValid && (
-                                    <span className="absolute right-3 top-3 text-green-600">
-                                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                                    </span>
-                                )}
-                            </div>
-                        </label>
-                        <label className="block">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Bank Name</span>
-                            <input
-                                type="text"
-                                value={bankName}
-                                onChange={(e) => setBankName(e.target.value)}
-                                className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                placeholder="HDFC Bank"
-                                readOnly={isIfscValid} // Lock if auto-fetched, or allow edit? Usually lock or allow override. I'll leave writable but it gets auto-filled.
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Branch Name</span>
-                            <input
-                                type="text"
-                                value={branchName}
-                                onChange={(e) => setBranchName(e.target.value)}
-                                className="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 p-2.5"
-                                placeholder="Indiranagar, Bangalore"
-                            />
-                        </label>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <h2 className="font-bold text-slate-900 dark:text-white mb-4">Documents</h2>
-                    <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors relative">
-                        <input
-                            type="file"
-                            multiple
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={(e) => {
-                                if (e.target.files) {
-                                    Array.from(e.target.files).forEach(file => handleFileUpload(file, 'document'));
-                                }
-                            }}
-                        />
-                        <span className="material-symbols-outlined text-4xl text-slate-400 mb-2">cloud_upload</span>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Click to Upload Documents</p>
-                        <p className="text-xs text-slate-500">Resume, ID Proof, Offer Letter</p>
-                    </div>
-
-                    {documents.length > 0 && (
-                        <div className="mt-4 flex flex-col gap-2">
-                            {documents.map((doc, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <span className="material-symbols-outlined text-slate-500">description</span>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{doc.name}</p>
-                                            <a href={doc.url} target="_blank" className="text-xs text-blue-600 hover:underline">View File</a>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDocuments(documents.filter((_, i) => i !== idx))}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <span className="material-symbols-outlined">delete</span>
-                                    </button>
-                                </div>
-                            ))}
                         </div>
                     )}
-                </div>
 
-                <button
-                    disabled={loading}
-                    className="w-full bg-[#135bec] text-white font-bold p-4 rounded-xl shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-colors disabled:opacity-70"
-                >
-                    {loading ? 'Creating...' : 'Create Employee Profile'}
-                </button>
-            </form >
-        </div >
+                    {/* Step 2: Contact */}
+                    {currentStep === 2 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">call</span> Contact Info
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Input label="Personal Email" type="email" value={personalEmail} onChange={setPersonalEmail} />
+                                <Input label="Official Email" type="email" value={officialEmail} onChange={setOfficialEmail} />
+                                <Input label="Mobile Number *" value={phoneNumber} onChange={setPhoneNumber} required prefix={phoneCode} />
+
+                                <div className="md:col-span-2">
+                                    <Input label="Current Address" value={currentAddress} onChange={setCurrentAddress} multiline />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Permanent Address</span>
+                                        <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                                            <input type="checkbox" checked={sameAsCurrent} onChange={(e) => setSameAsCurrent(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500" />
+                                            Same as Current
+                                        </label>
+                                    </div>
+                                    <textarea
+                                        value={permanentAddress}
+                                        onChange={e => setPermanentAddress(e.target.value)}
+                                        disabled={sameAsCurrent}
+                                        className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-slate-50 disabled:bg-slate-100 disabled:text-slate-500"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2 border-t pt-4 mt-2">
+                                    <h4 className="font-semibold mb-3 text-sm uppercase text-slate-500">Emergency Contact</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Input label="Contact Name" value={emergencyContactName} onChange={setEmergencyContactName} />
+                                        <Input label="Relationship" value={emergencyContactRelation} onChange={setEmergencyContactRelation} />
+                                        <Input label="Phone" value={emergencyContactPhone} onChange={setEmergencyContactPhone} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 3: Job */}
+                    {currentStep === 3 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">work</span> Job Details
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Input label="Employee ID" value={employeeId} placeholder="Auto-generated e.g. MS-2024-001" disabled />
+                                <Input label="Date of Joining *" type="date" value={dateOfJoining} onChange={setDateOfJoining} required />
+                                <Select label="Employment Type" value={employeeType} onChange={setEmployeeType} options={['Full-time', 'Part-time', 'Contract', 'Intern']} />
+
+                                <Select label="Department *" value={department} onChange={setDepartment} options={['Engineering', 'HR', 'Sales', 'Marketing', 'Finance', 'Operations']} required />
+                                <Select label="Designation *" value={position} onChange={setPosition} options={JOB_TITLES} required />
+                                <Select label="System Role" value={role} onChange={setRole} options={['employee', 'manager', 'hr', 'admin', 'cxo', 'intern']} />
+
+                                <Select label="Reporting Manager" value={managerId} onChange={setManagerId} options={managers.map(m => ({ label: `${m.firstName} ${m.lastName}`, value: m._id }))} />
+                                <Select label="HR Manager" value={hrManagerId} onChange={setHrManagerId} options={hrs.map(h => ({ label: `${h.firstName} ${h.lastName}`, value: h._id }))} />
+
+                                <Input label="Probation (Months)" type="number" value={probationPeriod} onChange={setProbationPeriod} />
+
+                                <div className="md:col-span-3 border-t pt-4 mt-2">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-medium text-slate-700">Work Location (Geo-fencing)</span>
+                                        <button type="button" onClick={handleCurrentLocation} className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
+                                            <span className="material-symbols-outlined text-[14px]">my_location</span> Get Current Location
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <Input label="Office Name" value={workLocationName} onChange={setWorkLocationName} />
+                                        <Input label="Latitude" value={workLat} onChange={setWorkLat} type="number" />
+                                        <Input label="Longitude" value={workLng} onChange={setWorkLng} type="number" />
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <input type="checkbox" checked={geoEnabled} onChange={e => setGeoEnabled(e.target.checked)} className="rounded" />
+                                        <span className="text-sm">Enable Geo-restriction for Attendance</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 4: Compensation */}
+                    {currentStep === 4 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">payments</span> Salary & Bank
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <Input label="Annual CTC (₹)" type="number" value={ctc} onChange={setCtc} className="text-xl font-bold" />
+                                    <p className="text-xs text-gray-500 mt-1">Basic = 50% of CTC, HRA = 40% of Basic</p>
+                                </div>
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg grid grid-cols-2 gap-4 border border-slate-200 dark:border-slate-700">
+                                    <Input label="Basic (Monthly)" value={basic} disabled />
+                                    <Input label="HRA" value={hra} disabled />
+                                    <Input label="Special Allowance" value={specialAllowance} disabled />
+                                    <Input label="PF Deduct" value={pf} onChange={setPf} type="number" />
+                                    <Input label="Prof Tax" value={pt} onChange={setPt} type="number" />
+                                    <div className="col-span-2 text-right border-t pt-2 mt-2">
+                                        <span className="block text-sm text-gray-500">Net Monthly Salary</span>
+                                        <span className="text-xl font-bold text-green-600">₹{(basic + hra + da + specialAllowance - pf - pt - deductions).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 border-t pt-4 border-dashed">
+                                <h4 className="font-semibold mb-3 text-sm uppercase text-slate-500">Bank Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <Input label="Bank Name" value={bankName} onChange={setBankName} />
+                                    <Input label="Account Number" value={accountNumber} onChange={setAccountNumber} />
+                                    <Input label="IFSC Code" value={ifscCode} onChange={setIfscCode} />
+                                    <Input label="UAN" value={uan} onChange={setUan} />
+                                    <Input label="PF Number" value={pfNumber} onChange={setPfNumber} />
+                                    <Input label="ESI Number" value={esiNumber} onChange={setEsiNumber} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 5: Experience */}
+                    {currentStep === 5 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">school</span> Education & Experience
+                            </h2>
+                            <div className="space-y-4">
+                                <h4 className="font-bold border-b pb-2">Education Qualifications</h4>
+                                {education.map((edu, idx) => (
+                                    <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end bg-slate-50 p-3 rounded-lg">
+                                        <Input label="Degree" value={edu.qualification} onChange={(v: string) => { const n = [...education]; n[idx].qualification = v; setEducation(n) }} placeholder="B.Tech" />
+                                        <Input label="Institution" value={edu.institution} onChange={(v: string) => { const n = [...education]; n[idx].institution = v; setEducation(n) }} />
+                                        <Input label="Year" value={edu.yearOfPassing} onChange={(v: string) => { const n = [...education]; n[idx].yearOfPassing = v; setEducation(n) }} />
+                                        <Input label="Grade" value={edu.grade} onChange={(v: string) => { const n = [...education]; n[idx].grade = v; setEducation(n) }} />
+                                        <button type="button" onClick={() => setEducation(education.filter((_, i) => i !== idx))} className="md:mb-2 text-red-500 hover:bg-red-50 p-2 rounded"><span className="material-symbols-outlined">delete</span></button>
+                                    </div>
+                                ))}
+                                <button type="button" onClick={() => setEducation([...education, { qualification: '', institution: '', yearOfPassing: '', grade: '' }])} className="text-sm font-bold text-blue-600">+ Add Education</button>
+                            </div>
+
+                            <div className="space-y-4 mt-8">
+                                <h4 className="font-bold border-b pb-2">Previous Employment</h4>
+                                {experience.map((exp, idx) => (
+                                    <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end bg-slate-50 p-3 rounded-lg">
+                                        <Input label="Company" value={exp.companyName} onChange={(v: string) => { const n = [...experience]; n[idx].companyName = v; setExperience(n) }} />
+                                        <Input label="Role" value={exp.designation} onChange={(v: string) => { const n = [...experience]; n[idx].designation = v; setExperience(n) }} />
+                                        <Input label="From" type="date" value={exp.startDate} onChange={(v: string) => { const n = [...experience]; n[idx].startDate = v; setExperience(n) }} />
+                                        <Input label="To" type="date" value={exp.endDate} onChange={(v: string) => { const n = [...experience]; n[idx].endDate = v; setExperience(n) }} />
+                                        <Input label="Salary" value={exp.lastSalary} onChange={(v: string) => { const n = [...experience]; n[idx].lastSalary = v; setExperience(n) }} />
+                                        <button type="button" onClick={() => setExperience(experience.filter((_, i) => i !== idx))} className="md:mb-2 text-red-500 hover:bg-red-50 p-2 rounded"><span className="material-symbols-outlined">delete</span></button>
+                                    </div>
+                                ))}
+                                <button type="button" onClick={() => setExperience([...experience, { companyName: '', designation: '', startDate: '', endDate: '', lastSalary: '', reason: '' }])} className="text-sm font-bold text-blue-600">+ Add Experience</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 6: Documents */}
+                    {currentStep === 6 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">upload_file</span> Documents
+                            </h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {['Resume', 'ID Proof', 'Address Proof', 'Offer Letter', 'Appointment Letter', 'NDA', 'Photo'].map((docType) => (
+                                    <div key={docType} className={`border-2 border-dashed p-4 rounded-xl flex flex-col items-center justify-center text-center hover:bg-slate-50 relative transition-colors ${documents.find(d => d.type === docType) ? 'border-green-300 bg-green-50' : 'border-slate-300'}`}>
+                                        <span className="text-sm font-semibold mb-2 text-slate-700">{docType}</span>
+                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileUpload(e.target.files[0], docType)} />
+                                        {documents.find(d => d.type === docType) ? (
+                                            <div className="text-green-600 flex flex-col items-center">
+                                                <span className="material-symbols-outlined text-[24px]">check_circle</span>
+                                                <span className="text-xs font-bold">Uploaded</span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-slate-400 flex flex-col items-center">
+                                                <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
+                                                <span className="text-xs">Click to Upload</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 7: IT Access */}
+                    {currentStep === 7 && (
+                        <div className="animate-fadeIn space-y-6">
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-600">security</span> IT & System Access
+                            </h2>
+                            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm mb-4">
+                                <span className="font-bold">Generated Credentials:</span> The user will use their official email and the default password below to login.
+                                <div className="mt-2 font-mono bg-white p-2 rounded border border-yellow-200 inline-block">
+                                    {generatedPassword}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-3">Software Access Required</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {['Slack', 'Jira', 'GitHub', 'Figma', 'AWS', 'Zoom', 'Notion', 'Office 365'].map(tool => (
+                                        <label key={tool} className={`flex items-center gap-2 border px-3 py-2 rounded-lg cursor-pointer transition-colors ${softwareAccess.includes(tool) ? 'bg-blue-50 border-blue-200' : 'hover:bg-slate-50'}`}>
+                                            <input type="checkbox"
+                                                checked={softwareAccess.includes(tool)}
+                                                onChange={e => {
+                                                    if (e.target.checked) setSoftwareAccess([...softwareAccess, tool]);
+                                                    else setSoftwareAccess(softwareAccess.filter(t => t !== tool));
+                                                }}
+                                                className="rounded text-blue-600"
+                                            />
+                                            <span className="text-sm font-medium text-slate-700">{tool}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <Input label="Medical Conditions (Optional)" value={medicalConditions} onChange={setMedicalConditions} multiline />
+                        </div>
+                    )}
+
+                    {/* Footer Actions */}
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                        <button
+                            type="button"
+                            onClick={prevStep}
+                            disabled={currentStep === 1}
+                            className="px-6 py-2 rounded-lg border border-slate-300 font-bold text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
+                        >
+                            Back
+                        </button>
+
+                        {currentStep < STEPS.length ? (
+                            <button
+                                type="button"
+                                onClick={nextStep}
+                                className="px-6 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white font-bold hover:bg-slate-800 flex items-center gap-2"
+                            >
+                                Next Step <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                className="px-8 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 shadow-lg shadow-green-500/30 flex items-center gap-2 disabled:opacity-70"
+                            >
+                                {loading ? 'Creating...' : 'Create Employee Profile'}
+                                <span className="material-symbols-outlined text-[18px]">check</span>
+                            </button>
+                        )}
+                    </div>
+
+                </div>
+            </div>
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center m-4">
+                        <div className="size-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="material-symbols-outlined text-5xl">check_circle</span>
+                        </div>
+                        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Success!</h2>
+                        <p className="text-slate-500 mb-6">Employee profile has been created successfully.</p>
+
+                        <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 mb-6 text-left border border-slate-200 dark:border-slate-700">
+                            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Employee ID</p>
+                            <p className="text-lg font-mono font-bold text-slate-900 dark:text-white mb-3">{employeeId || 'Generating...'}</p>
+
+                            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Temporary Password</p>
+                            <div className="flex justify-between items-center">
+                                <code className="text-lg font-mono font-bold text-blue-600">{generatedPassword}</code>
+                                <button onClick={() => { navigator.clipboard.writeText(generatedPassword); toast.success('Copied') }} className="text-slate-400 hover:text-blue-600">
+                                    <span className="material-symbols-outlined">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => router.push('/hr/employees')} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+                                Directory
+                            </button>
+                            <button onClick={() => window.location.reload()} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/30">
+                                Add Another
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// --- Reusable Components (Keep these clean) ---
+
+function Input({ label, value, onChange, type = 'text', required, className = '', placeholder, prefix, disabled, multiline }: any) {
+    return (
+        <label className="block w-full">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">{label}</span>
+            <div className="flex">
+                {prefix && (
+                    <span className="inline-flex items-center px-3 border border-r-0 border-slate-300 bg-slate-100 text-slate-500 sm:text-sm rounded-l-md">
+                        {prefix}
+                    </span>
+                )}
+                {multiline ? (
+                    <textarea
+                        required={required}
+                        value={value}
+                        onChange={e => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        disabled={disabled}
+                        className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white dark:bg-slate-800 disabled:bg-slate-100 ${className} ${prefix ? 'rounded-l-none' : ''}`}
+                        rows={3}
+                    />
+                ) : (
+                    <input
+                        type={type}
+                        required={required}
+                        value={value}
+                        onChange={e => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        disabled={disabled}
+                        className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white dark:bg-slate-800 disabled:bg-slate-100 ${className} ${prefix ? 'rounded-l-none' : ''}`}
+                    />
+                )}
+            </div>
+        </label>
+    );
+}
+
+function Select({ label, value, onChange, options, required }: any) {
+    return (
+        <label className="block w-full">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">{label}</span>
+            <select
+                required={required}
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2.5 border bg-white dark:bg-slate-800"
+            >
+                <option value="">Select...</option>
+                {options.map((opt: any) => (
+                    typeof opt === 'object' ?
+                        <option key={opt.value} value={opt.value}>{opt.label}</option> :
+                        <option key={opt} value={opt}>{opt}</option>
+                ))}
+            </select>
+        </label>
     );
 }
