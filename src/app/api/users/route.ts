@@ -123,6 +123,21 @@ export async function POST(req: Request) {
 
         await user.save();
 
+        // Send Welcome Email
+        try {
+            const { sendEmail } = await import('@/lib/email');
+            await sendEmail({
+                to: user.email,
+                subject: 'Welcome to Mindstar HR Portal',
+                html: `<h1>Welcome, ${user.firstName}!</h1><p>Your employee account has been created.</p><p><strong>Employee ID:</strong> ${finalEmployeeId}</p><p>Please log in using your email and default password.</p>`,
+                text: `Welcome, ${user.firstName}. Your Employee ID is ${finalEmployeeId}.`,
+                tenantId: session.user.organizationId,
+                userId: user._id.toString()
+            });
+        } catch (e) {
+            console.error('Email failed', e);
+        }
+
         return NextResponse.json({
             message: 'Employee created successfully',
             user: {

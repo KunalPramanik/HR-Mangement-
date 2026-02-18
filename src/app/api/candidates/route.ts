@@ -71,3 +71,30 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function PUT(req: Request) {
+    try {
+        await dbConnect();
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const body = await req.json();
+        const { id, ...updateData } = body;
+
+        if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+        const tenantId = session.user.organizationId;
+
+        // Ensure we only update candidates in our tenant
+        const candidate = await Candidate.findOne({ _id: id, tenantId });
+        if (!candidate) return NextResponse.json({ error: 'Candidate not found' }, { status: 404 });
+
+        Object.assign(candidate, updateData);
+        candidate.updatedAt = new Date();
+        await candidate.save();
+
+        return NextResponse.json(candidate);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

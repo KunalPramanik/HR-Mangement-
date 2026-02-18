@@ -17,7 +17,7 @@ const NotificationSchema = new Schema<INotification>(
         tenantId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
         title: { type: String, required: true },
         message: { type: String, required: true },
-        type: { type: String, enum: ['info', 'success', 'warning', 'error'], default: 'info' },
+        type: { type: String, enum: ['info', 'success', 'warning', 'error', 'system'], default: 'info' },
         link: { type: String },
         read: { type: Boolean, default: false },
     },

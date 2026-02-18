@@ -106,12 +106,18 @@ export async function POST(req: Request) {
 
             // Calculate total hours
             if (attendance.checkIn) {
-                const diff = (attendance.checkOut.getTime() - attendance.checkIn.getTime()) / (1000 * 3600);
-                attendance.totalWorkHours = parseFloat(diff.toFixed(2));
+                const diffMs = attendance.checkOut.getTime() - attendance.checkIn.getTime();
+                const totalMinutesWorked = diffMs / (1000 * 60);
 
-                // Calculate overtime (if worked more than 9 hours)
-                if (diff > 9) {
-                    attendance.overtimeHours = parseFloat((diff - 9).toFixed(2));
+                // Calculate total break duration in minutes
+                const breakMinutes = attendance.breaks.reduce((acc: number, b: any) => acc + (b.durationMinutes || 0), 0);
+
+                const netWorkMinutes = Math.max(0, totalMinutesWorked - breakMinutes);
+                attendance.totalWorkHours = parseFloat((netWorkMinutes / 60).toFixed(2));
+
+                // Calculate overtime (if net worked more than 9 hours)
+                if (attendance.totalWorkHours > 9) {
+                    attendance.overtimeHours = parseFloat((attendance.totalWorkHours - 9).toFixed(2));
                 }
             }
 
