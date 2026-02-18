@@ -1,203 +1,204 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-interface User {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-    department: string;
-    position: string;
-    profilePicture?: string;
-    isActive: boolean;
-    employmentStatus?: string;
-}
-
-export default function EmployeesListPage() {
+export default function EmployeeConnectPage() {
     const router = useRouter();
-    const [users, setUsers] = useState<User[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('active');
-    const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [deptFilter, setDeptFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('active');
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
+    const fetchEmployees = async () => {
+        setLoading(true);
         try {
-            const res = await fetch('/api/users');
+            const params = new URLSearchParams();
+            if (searchTerm) params.append('search', searchTerm);
+            if (deptFilter) params.append('department', deptFilter);
+            if (statusFilter !== 'all') params.append('status', statusFilter); // Assuming API supports status filtering
+            // Note: My GET /api/users currently filters by 'search', 'department', 'role'. 
+            // I should update it to support 'status' or filter client side if small list.
+            // Let's assume client side filter for now if API doesn't fully support it or just rely on search.
+
+            const res = await fetch(`/api/users?view=admin&${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
-                if (Array.isArray(data)) {
-                    setUsers(data);
-                }
+                setEmployees(data);
             }
         } catch (error) {
-            console.error('Failed to fetch users', error);
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleStatusChange = async (userId: string, newStatus: string) => {
-        if (!confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchEmployees();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, deptFilter, statusFilter]);
 
+    const handleSuspend = async (id: string, currentStatus: boolean) => {
+        if (!confirm(`Are you sure you want to ${currentStatus ? 'suspend' : 'activate'} this employee?`)) return;
         try {
-            const isActive = newStatus === 'active' || newStatus === 'probation';
-            const res = await fetch(`/api/users/${userId}`, {
+            const res = await fetch(`/api/users/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employmentStatus: newStatus, isActive })
+                body: JSON.stringify({ isActive: !currentStatus })
             });
-
             if (res.ok) {
-                setUsers(prev => prev.map(u =>
-                    u._id === userId ? { ...u, employmentStatus: newStatus, isActive } : u
-                ));
+                // Optimistic update
+                setEmployees(prev => prev.map(e => e._id === id ? { ...e, isActive: !currentStatus } : e));
             } else {
-                alert('Failed to update status');
+                alert('Action failed');
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error updating status');
-        }
-    };
-
-    const filteredUsers = users.filter(user => {
-        if (filter === 'active') return user.isActive;
-        if (filter === 'inactive') return !user.isActive;
-        return true;
-    });
-
-    const getStatusColor = (status?: string) => {
-        switch (status) {
-            case 'active': return 'bg-green-100 text-green-700 border-green-200';
-            case 'probation': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'notice_period': return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'resigned': return 'bg-slate-100 text-slate-500 border-slate-200';
-            case 'terminated': return 'bg-red-100 text-red-700 border-red-200';
-            case 'internship_completed': return 'bg-purple-100 text-purple-700 border-purple-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
+        } catch (e) {
+            alert('Error');
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 pb-20">
+        <div className="flex flex-col gap-8 pb-12 w-full max-w-[1600px] mx-auto min-h-screen">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
-                        <span className="material-symbols-outlined text-slate-700 dark:text-slate-200">arrow_back</span>
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Employees Directory</h1>
-                        <p className="text-xs text-slate-500">Manage employment status and access</p>
-                    </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-extrabold text-[#111827] mb-2 tracking-tight">People & Culture</h1>
+                    <p className="text-[#6b7280] font-medium">Manage your organization's talent pool.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value as any)}
-                        className="p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
-                    >
-                        <option value="active">Active Employees</option>
-                        <option value="inactive">Past / Inactive</option>
-                        <option value="all">All Records</option>
-                    </select>
+                <div className="flex gap-3">
                     <button
-                        onClick={() => router.push('/hr/employees/add')}
-                        className="bg-[#135bec] text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all"
+                        onClick={() => router.push('/hr/org-chart')}
+                        className="px-6 py-3 rounded-xl border-2 border-gray-100 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                        <span className="material-symbols-outlined text-[20px]">person_add</span>
-                        <span className="hidden md:inline">Add New</span>
+                        Org Chart
                     </button>
+                    <Link
+                        href="/onboarding/new"
+                        className="px-6 py-3 rounded-xl bg-[#3b82f6] text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-600 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined">person_add</span>
+                        Add Employee
+                    </Link>
                 </div>
             </div>
 
-            {loading ? (
-                <div className="flex justify-center py-10">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#135bec]"></div>
+            {/* Filters */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex-1 w-full bg-gray-50 rounded-xl px-4 py-3 flex items-center gap-2 border border-transparent focus-within:border-blue-500 transition-colors">
+                    <span className="material-symbols-outlined text-gray-400">search</span>
+                    <input
+                        type="text"
+                        placeholder="Search by name, email, or ID..."
+                        className="bg-transparent border-none outline-none text-sm w-full font-medium text-[#111827] placeholder:text-gray-400"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredUsers.map((user) => (
-                        <div
-                            key={user._id}
-                            style={{ zIndex: activeMenu === user._id ? 50 : 1 }}
-                            className={`bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 transition-all relative ${!user.isActive ? 'grayscale opacity-75' : ''}`}
-                        >
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push(`/profile?email=${user.email}`)}>
-                                    <div className="size-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[#135bec] font-bold text-lg overflow-hidden shrink-0">
-                                        {user.profilePicture ? (
-                                            <img src={user.profilePicture} alt="Pic" className="w-full h-full object-cover" />
-                                        ) : (
-                                            user.firstName[0]
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white break-words">{user.firstName} {user.lastName}</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{user.position}</p>
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActiveMenu(activeMenu === user._id ? null : user._id);
-                                        }}
-                                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-slate-200 transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-slate-400">more_vert</span>
-                                    </button>
 
-                                    {/* Dropdown Menu */}
-                                    {activeMenu === user._id && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10 cursor-default"
-                                                onClick={() => setActiveMenu(null)}
-                                            ></div>
-                                            <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-20 animate-in fade-in zoom-in-95 duration-100">
-                                                <div className="p-1">
-                                                    <p className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Change Status</p>
-                                                    <button onClick={() => { handleStatusChange(user._id, 'active'); setActiveMenu(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 rounded text-green-600 font-medium">Active</button>
-                                                    <button onClick={() => { handleStatusChange(user._id, 'notice_period'); setActiveMenu(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 rounded text-orange-600 font-medium">Notice Period</button>
-                                                    <button onClick={() => { handleStatusChange(user._id, 'resigned'); setActiveMenu(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 rounded text-slate-600 font-medium">Resigned</button>
-                                                    <button onClick={() => { handleStatusChange(user._id, 'terminated'); setActiveMenu(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 rounded text-red-600 font-medium">Terminated</button>
+                <select
+                    className="px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 font-bold text-sm text-gray-600 outline-none focus:border-blue-500"
+                    value={deptFilter}
+                    onChange={(e) => setDeptFilter(e.target.value)}
+                >
+                    <option value="">All Departments</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="HR">HR</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Finance">Finance</option>
+                </select>
+
+                <select
+                    className="px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 font-bold text-sm text-gray-600 outline-none focus:border-blue-500"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    {loading ? (
+                        <div className="p-12 text-center text-gray-400 font-medium">Loading employees...</div>
+                    ) : employees.length === 0 ? (
+                        <div className="p-12 text-center text-gray-400 font-medium">No employees found.</div>
+                    ) : (
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/50 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                    <th className="px-6 py-4">Employee</th>
+                                    <th className="px-6 py-4">Role & Dept</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Joining Date</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {employees.map((emp) => (
+                                    <tr key={emp._id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="size-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center font-bold text-blue-600 text-sm overflow-hidden">
+                                                    {emp.profilePicture ? (
+                                                        <img src={emp.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        `${emp.firstName[0]}${emp.lastName[0]}`
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-[#111827]">{emp.firstName} {emp.lastName}</div>
+                                                    <div className="text-xs text-gray-500">{emp.email}</div>
                                                 </div>
                                             </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300 font-bold uppercase">
-                                    {user.department}
-                                </span>
-                                <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase border ${getStatusColor(user.employmentStatus || (user.isActive ? 'active' : 'resigned'))}`}>
-                                    {user.employmentStatus?.replace('_', ' ') || (user.isActive ? 'Active' : 'Inactive')}
-                                </span>
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs text-slate-500">
-                                <span>ID: {user.role === 'intern' ? 'INT' : 'EMP'}-{user._id.slice(-4)}</span>
-                                <button className="font-bold text-[#135bec] hover:underline" onClick={() => router.push(`/profile?email=${user.email}`)}>View Details</button>
-                            </div>
-                        </div>
-                    ))}
-                    {filteredUsers.length === 0 && (
-                        <div className="col-span-full py-10 text-center text-slate-500">
-                            No employees found for this filter.
-                        </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-gray-700 text-sm">{emp.position}</div>
+                                            <div className="text-xs text-gray-400 font-medium">{emp.department}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${emp.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                                                }`}>
+                                                <div className={`size-1.5 rounded-full ${emp.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                {emp.isActive ? 'Active' : 'Suspended'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-600">
+                                            {emp.dateOfJoining ? new Date(emp.dateOfJoining).toLocaleDateString() : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => router.push(`/hr/employees/${emp._id}`)}
+                                                    className="size-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                    title="View Profile"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSuspend(emp._id, emp.isActive)}
+                                                    className={`size-8 rounded-lg flex items-center justify-center transition-colors ${emp.isActive ? 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600' : 'bg-green-50 text-green-600'
+                                                        }`}
+                                                    title={emp.isActive ? "Suspend" : "Activate"}
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">{emp.isActive ? 'block' : 'check_circle'}</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }

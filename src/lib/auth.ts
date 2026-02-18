@@ -17,7 +17,6 @@ export const authOptions: NextAuthOptions = {
             async authorize(credentials) {
                 await dbConnect();
 
-                // 1. WebAuthn Token Login
                 if (credentials?.token && credentials?.type === 'webauthn') {
                     const user = await User.findOne({
                         webauthnLoginToken: credentials.token,
@@ -26,29 +25,28 @@ export const authOptions: NextAuthOptions = {
 
                     if (!user) throw new Error('Invalid or expired biometric session.');
 
-                    // Clear token
                     user.webauthnLoginToken = undefined;
                     user.webauthnLoginExpires = undefined;
                     await user.save();
 
                     return {
                         id: user._id.toString(),
+                        organizationId: user.organizationId?.toString(),
                         email: user.email,
                         name: `${user.firstName} ${user.lastName}`,
                         role: user.role,
+                        roleId: user.roleId?.toString(),
                         employeeId: user.employeeId,
                         department: user.department,
-                        position: user.position,
+                        position: user.position || 'Employee', // Reverted to position
                         profilePicture: user.profilePicture,
                     };
                 }
 
-                // 2. Standard Password Login
                 if (!credentials?.emailOrEmployeeId || !credentials?.password) {
                     throw new Error('Please enter your credentials');
                 }
 
-                // Find user by email or employee ID
                 const user = await User.findOne({
                     $or: [
                         { email: credentials.emailOrEmployeeId.toLowerCase() },
@@ -72,12 +70,14 @@ export const authOptions: NextAuthOptions = {
 
                 return {
                     id: user._id.toString(),
+                    organizationId: user.organizationId?.toString(),
                     email: user.email,
                     name: `${user.firstName} ${user.lastName}`,
                     role: user.role,
+                    roleId: user.roleId?.toString(),
                     employeeId: user.employeeId,
                     department: user.department,
-                    position: user.position,
+                    position: user.position || 'Employee',
                     profilePicture: user.profilePicture,
                 };
             },
@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
     ],
     session: {
         strategy: 'jwt',
-        maxAge: 30 * 24 * 60 * 60, // 30 days
+        maxAge: 30 * 24 * 60 * 60,
     },
     pages: {
         signIn: '/login',
@@ -95,7 +95,9 @@ export const authOptions: NextAuthOptions = {
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
+                token.organizationId = user.organizationId;
                 token.role = user.role;
+                token.roleId = user.roleId;
                 token.employeeId = user.employeeId;
                 token.department = user.department;
                 token.position = user.position;
@@ -106,6 +108,8 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.id as string;
+                session.user.organizationId = token.organizationId as string;
+                session.user.roleId = token.roleId as string;
                 session.user.role = token.role as string;
                 session.user.employeeId = token.employeeId as string;
                 session.user.department = token.department as string;

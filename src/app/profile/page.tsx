@@ -1,106 +1,152 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
     const { data: session } = useSession();
+    const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [formData, setFormData] = useState({
+        phoneNumber: '',
+        currentAddress: '',
+        personalEmail: '',
+        emergencyContactName: '',
+        emergencyContactPhone: ''
+    });
+
+    useEffect(() => {
+        if (session?.user?.id) fetchProfile();
+    }, [session]);
+
+    const fetchProfile = async () => {
+        try {
+            const res = await fetch(`/api/users?id=${session?.user?.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data);
+                setFormData({
+                    phoneNumber: data.phoneNumber || '',
+                    currentAddress: data.currentAddress || '',
+                    personalEmail: data.personalEmail || '',
+                    emergencyContactName: data.emergencyContact?.name || '',
+                    emergencyContactPhone: data.emergencyContact?.phoneNumber || ''
+                });
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/users', {
+                method: 'PUT', // Assuming PUT /api/users handles update by ID
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: session?.user?.id,
+                    phoneNumber: formData.phoneNumber,
+                    currentAddress: formData.currentAddress,
+                    personalEmail: formData.personalEmail,
+                    emergencyContact: {
+                        name: formData.emergencyContactName,
+                        phoneNumber: formData.emergencyContactPhone
+                    }
+                })
+            });
+
+            if (res.ok) {
+                toast.success('Profile updated successfully');
+                fetchProfile();
+            } else {
+                toast.error('Failed to update profile');
+            }
+        } catch (error) {
+            toast.error('Error updating profile');
+        }
+    };
+
+    if (loading) return <div className="p-12 text-center text-slate-500">Loading profile...</div>;
 
     return (
-        <div className="flex flex-col gap-8 pb-12 w-full max-w-[1600px] mx-auto min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-4xl font-extrabold text-[#111827] tracking-tight mb-2">My Profile</h1>
-                    <p className="text-[#6b7280] font-medium">Manage your account and personal details.</p>
-                </div>
-                <button
-                    onClick={() => alert('Profile editing is currently disabled by administrator.')}
-                    className="px-6 py-3 rounded-full bg-[#3b82f6] text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:bg-[#2563eb] transition-colors"
-                >
-                    <span className="material-symbols-outlined text-[20px]">edit</span>
-                    Edit Profile
-                </button>
-            </div>
+        <div className="p-8 max-w-[1200px] mx-auto pb-20">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">My Profile</h1>
+            <p className="text-slate-500 mb-8">Manage your personal information.</p>
 
-            {/* Profile Card */}
-            <div className="soft-card p-8 flex flex-col items-center text-center relative overflow-hidden bg-gradient-to-b from-blue-50 to-white">
-                <div className="size-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-[#3b82f6] to-[#2563eb] flex items-center justify-center text-white text-5xl font-bold mb-6 relative z-10">
-                    {session?.user?.name?.[0] || 'U'}
-                    <div className="absolute bottom-1 right-1 size-6 bg-green-500 border-2 border-white rounded-full"></div>
-                </div>
-
-                <h2 className="text-3xl font-extrabold text-[#111827] mb-2">{session?.user?.name || 'User Name'}</h2>
-                <p className="text-[#6b7280] font-medium text-lg mb-6">Software Engineer • Engineering</p>
-
-                <div className="flex gap-4">
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 text-sm font-bold text-gray-700">
-                        <span className="material-symbols-outlined text-gray-400">mail</span>
-                        {session?.user?.email || 'user@company.com'}
-                    </div>
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 text-sm font-bold text-gray-700">
-                        <span className="material-symbols-outlined text-gray-400">call</span>
-                        +1 (555) 123-4567
-                    </div>
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 text-sm font-bold text-gray-700">
-                        <span className="material-symbols-outlined text-gray-400">location_on</span>
-                        New York, USA
-                    </div>
-                </div>
-            </div>
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* Personal Info */}
-                <div className="soft-card p-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-[#111827] text-lg">Personal Information</h3>
-                        <button className="text-[#3b82f6] text-sm font-bold">Update</button>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Date of Birth</span>
-                            <span className="text-[#111827] font-bold text-sm">Oct 24, 1995</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Profile Card */}
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-fit">
+                    <div className="flex flex-col items-center mb-6">
+                        <div className="size-24 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-3xl font-bold mb-4">
+                            {user.firstName?.[0]}{user.lastName?.[0]}
                         </div>
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Gender</span>
-                            <span className="text-[#111827] font-bold text-sm">Male</span>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user.firstName} {user.lastName}</h2>
+                        <p className="text-slate-500 dark:text-slate-400">{user.position} • {user.department}</p>
+                    </div>
+                    <div className="space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                        <div className="flex justify-between border-b pb-2 border-slate-100 dark:border-slate-700">
+                            <span className="text-slate-400">Employee ID</span>
+                            <span className="font-medium">{user.employeeId}</span>
                         </div>
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Nationality</span>
-                            <span className="text-[#111827] font-bold text-sm">American</span>
+                        <div className="flex justify-between border-b pb-2 border-slate-100 dark:border-slate-700">
+                            <span className="text-slate-400">Email</span>
+                            <span className="font-medium">{user.email}</span>
                         </div>
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Marital Status</span>
-                            <span className="text-[#111827] font-bold text-sm">Single</span>
+                        <div className="flex justify-between border-b pb-2 border-slate-100 dark:border-slate-700">
+                            <span className="text-slate-400">Joined</span>
+                            <span className="font-medium">{new Date(user.dateOfJoining).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-400">Status</span>
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase">{user.employmentStatus}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Employment Info */}
-                <div className="soft-card p-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-[#111827] text-lg">Employment Details</h3>
-                        <button className="text-[#3b82f6] text-sm font-bold">View Contract</button>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Joined Date</span>
-                            <span className="text-[#111827] font-bold text-sm">Jan 15, 2023</span>
+                {/* Edit Form */}
+                <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Edit Details</h3>
+                    <form onSubmit={handleUpdate} className="space-y-6">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                                <input value={formData.phoneNumber} onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })} className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 border-slate-200 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Personal Email</label>
+                                <input value={formData.personalEmail} onChange={e => setFormData({ ...formData, personalEmail: e.target.value })} className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 border-slate-200 outline-none" />
+                            </div>
                         </div>
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Department</span>
-                            <span className="text-[#111827] font-bold text-sm">Engineering</span>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Current Address</label>
+                            <textarea rows={3} value={formData.currentAddress} onChange={e => setFormData({ ...formData, currentAddress: e.target.value })} className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 border-slate-200 outline-none resize-none" />
                         </div>
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Manager</span>
-                            <span className="text-[#111827] font-bold text-sm">James Wilson</span>
+
+                        <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
+                            <h4 className="font-bold text-slate-900 dark:text-white mb-4">Emergency Contact</h4>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Contact Name</label>
+                                    <input value={formData.emergencyContactName} onChange={e => setFormData({ ...formData, emergencyContactName: e.target.value })} className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 border-slate-200 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Contact Phone</label>
+                                    <input value={formData.emergencyContactPhone} onChange={e => setFormData({ ...formData, emergencyContactPhone: e.target.value })} className="w-full px-4 py-2 rounded-lg border dark:bg-slate-700 border-slate-200 outline-none" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex justify-between border-b border-gray-100 pb-2">
-                            <span className="text-gray-500 text-sm font-medium">Work Location</span>
-                            <span className="text-[#111827] font-bold text-sm">HQ - Floor 4</span>
+
+                        <div className="flex justify-end pt-4">
+                            <button type="submit" className="bg-blue-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">
+                                Save Changes
+                            </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

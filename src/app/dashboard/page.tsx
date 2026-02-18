@@ -11,13 +11,46 @@ export default function DashboardPage() {
     const router = useRouter();
     const [isOnDuty, setIsOnDuty] = useState(false);
     const [isOnBreak, setIsOnBreak] = useState(false);
-    const [time, setTime] = useState(new Date());
+    const [time, setTime] = useState<Date | null>(null); // Start as null to avoid hydration mismatch
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [showToast, setShowToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
-    const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
+    const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+    const [locationStatus, setLocationStatus] = useState<'verifying' | 'verified' | 'error'>('verifying');
+    const [geoLocation, setGeoLocation] = useState<{ lat: number, lng: number } | null>(null);
 
+    // Initial Fetch (Status + Location)
     useEffect(() => {
+        // Clock
         const timer = setInterval(() => setTime(new Date()), 1000);
+
+        // Location
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLocationStatus('verified');
+                    setGeoLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+                },
+                (error) => setLocationStatus('error')
+            );
+        } else {
+            setLocationStatus('error');
+        }
+
+        // Attendance Status
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch('/api/attendance');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'Present') setIsOnDuty(true);
+                    if (data.isOnBreak) setIsOnBreak(true);
+                }
+            } catch (e) {
+                console.error("Failed to fetch attendance status", e);
+            }
+        };
+        fetchStatus();
+
         return () => clearInterval(timer);
     }, []);
 
@@ -29,14 +62,64 @@ export default function DashboardPage() {
         }
     }, [showToast]);
 
+    const performAttendanceAction = async (action: 'clock-in' | 'clock-out' | 'start-break' | 'end-break') => {
+        if (!geoLocation) {
+            setShowToast({ msg: 'Location required for attendance.', type: 'error' });
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, location: geoLocation })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+
+                if (action === 'clock-in') {
+                    setIsOnDuty(true);
+                    setShowToast({ msg: 'You are now ON DUTY.', type: 'success' });
+                } else if (action === 'clock-out') {
+                    setIsOnDuty(false);
+                    setShowToast({ msg: 'You are now OFF DUTY.', type: 'success' });
+                } else if (action === 'start-break') {
+                    setShowToast({ msg: 'Break started.', type: 'success' });
+                } else if (action === 'end-break') {
+                    setShowToast({ msg: 'Break ended.', type: 'success' });
+                }
+
+                // Refresh attendance status
+                // Assuming fetchAttendanceStatus is defined elsewhere or needs to be added.
+                // For now, let's simulate the state changes based on the action.
+                // If a full refresh is needed, the `fetchStatus` from useEffect could be extracted.
+                // For this change, I'll just update the local state as per the original logic.
+                if (action === 'clock-in') setIsOnDuty(true);
+                else if (action === 'clock-out') { setIsOnDuty(false); setIsOnBreak(false); }
+                else if (action === 'start-break') setIsOnBreak(true);
+                else if (action === 'end-break') setIsOnBreak(false);
+
+            } else {
+                const error = await res.json();
+                setShowToast({ msg: error.error || 'Failed to update attendance', type: 'error' });
+            }
+        } catch (e) {
+            setShowToast({ msg: 'Network error occurred.', type: 'error' });
+        }
+    };
+
     const toggleShift = () => {
-        const newStatus = !isOnDuty;
-        setIsOnDuty(newStatus);
-        if (!newStatus) setIsOnBreak(false); // Reset break if going off duty
-        setShowToast({
-            msg: newStatus ? 'You are now ON DUTY.' : 'You are now OFF DUTY.',
-            type: 'success'
-        });
+        if (isOnDuty) {
+            // Cannot just toggle off via this pill usually, use End Shift button. 
+            // But for UI consistency let's assume clicking toggle OFF means end shift? 
+            // The UI has explicit "END SHIFT" button. 
+            // Let's make this toggle ONLY work if OFF duty -> ON duty.
+            // If ON duty, show toast to use End Shift button.
+            setShowToast({ msg: 'Please use "END SHIFT" button to clock out.', type: 'error' });
+        } else {
+            performAttendanceAction('clock-in');
+        }
     };
 
     const toggleBreak = () => {
@@ -44,12 +127,7 @@ export default function DashboardPage() {
             setShowToast({ msg: 'You must be ON DUTY to take a break.', type: 'error' });
             return;
         }
-        const newStatus = !isOnBreak;
-        setIsOnBreak(newStatus);
-        setShowToast({
-            msg: newStatus ? 'Break started. Enjoy!' : 'Break ended. Welcome back!',
-            type: 'success'
-        });
+        performAttendanceAction(isOnBreak ? 'end-break' : 'start-break');
     };
 
     const endShift = () => {
@@ -57,28 +135,62 @@ export default function DashboardPage() {
             setShowToast({ msg: 'You are already OFF DUTY.', type: 'error' });
             return;
         }
-        setIsOnDuty(false);
-        setIsOnBreak(false);
-        setShowToast({ msg: 'Shift ended successfully. Have a great evening!', type: 'success' });
+        if (confirm('Are you sure you want to end your shift?')) {
+            performAttendanceAction('clock-out');
+        }
     };
 
-    const toggleActionMenu = (id: number) => {
+    const toggleActionMenu = (id: string) => {
         setOpenActionMenuId(openActionMenuId === id ? null : id);
     };
 
-    const [locationStatus, setLocationStatus] = useState<'verifying' | 'verified' | 'error'>('verifying');
     const [showAi, setShowAi] = useState(false);
 
+
+
+
+    const [directReports, setDirectReports] = useState<any[]>([]);
+    const [isLoadingReports, setIsLoadingReports] = useState(true);
+
     useEffect(() => {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => setLocationStatus('verified'),
-                (error) => setLocationStatus('error')
-            );
-        } else {
-            setLocationStatus('error');
+        if (session?.user?.id) {
+            fetch(`/api/users/${session.user.id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.directReports) {
+                        setDirectReports(data.directReports);
+                    }
+                    setIsLoadingReports(false);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch reports", err);
+                    setIsLoadingReports(false);
+                });
         }
-    }, []);
+    }, [session?.user?.id]);
+
+    const handleSuspend = async (userId: string) => {
+        if (!confirm("Are you sure you want to suspend this employee?")) return;
+
+        try {
+            const res = await fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: false })
+            });
+
+            if (res.ok) {
+                setShowToast({ msg: 'User suspended successfully', type: 'success' });
+                setDirectReports(prev => prev.map(u => u._id === userId ? { ...u, isActive: false } : u));
+            } else {
+                const err = await res.json();
+                setShowToast({ msg: err.error || 'Failed to suspend', type: 'error' });
+            }
+        } catch (error) {
+            setShowToast({ msg: 'Network error', type: 'error' });
+        }
+        setOpenActionMenuId(null);
+    };
 
     return (
         <div className="flex flex-col gap-6 md:gap-8 pb-20 md:pb-12 w-full max-w-[1600px] mx-auto min-h-screen relative">
@@ -108,7 +220,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight mb-2">System Terminal</h1>
-                    <p className="text-[#6b7280] font-medium text-sm md:text-base">Welcome back, Administrator. Your organization's health is optimal.</p>
+                    <p className="text-[#6b7280] font-medium text-sm md:text-base">Welcome back, {session?.user?.name || 'Administrator'}. Your organization's health is optimal.</p>
                 </div>
                 <div className="flex bg-white p-1 rounded-full shadow-sm border border-gray-100 self-start md:self-auto">
                     <button onClick={() => router.push('/dashboard')} className="px-5 py-2 rounded-full bg-[#111827] text-white font-bold text-xs md:text-sm shadow-md transition-all">Dashboard</button>
@@ -202,7 +314,7 @@ export default function DashboardPage() {
 
                         <div className="text-center">
                             <h2 className="text-4xl md:text-5xl font-mono font-bold text-[#111827] mb-2 tracking-tighter">
-                                {time.toLocaleTimeString([], { hour12: false })}
+                                {time ? time.toLocaleTimeString([], { hour12: false }) : '--:--:--'}
                             </h2>
                             <p className={`font-medium text-sm transition-colors ${isOnBreak ? 'text-yellow-500 font-bold' : 'text-gray-400'}`}>
                                 {isOnBreak ? 'ON BREAK - Returns at 1:00 PM' : (isOnDuty ? 'Shift started at 08:00 AM' : 'Shift not started')}
@@ -307,40 +419,47 @@ export default function DashboardPage() {
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
-                                {[
-                                    { id: 101, name: 'Alexandria Smith', role: 'Senior UX Designer', dept: 'Creative', status: 'Online', statusColor: 'bg-green-500' },
-                                    { id: 102, name: 'James Wilson', role: 'Backend Lead', dept: 'Engineering', status: 'In Meeting', statusColor: 'bg-yellow-500' },
-                                    { id: 103, name: 'Elena Rodriguez', role: 'HR Manager', dept: 'Operations', status: 'Away', statusColor: 'bg-gray-300' },
-                                ].map((row, i) => (
-                                    <tr key={i} className="group hover:bg-gray-50 transition-colors">
+                                {isLoadingReports ? (
+                                    <tr>
+                                        <td colSpan={4} className="py-4 text-center text-gray-500">Loading team data...</td>
+                                    </tr>
+                                ) : directReports.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="py-4 text-center text-gray-500">No direct reports found.</td>
+                                    </tr>
+                                ) : (directReports.map((row) => (
+                                    <tr key={row._id} className="group hover:bg-gray-50 transition-colors">
                                         <td className="py-4 pl-2">
                                             <div className="flex items-center gap-3">
                                                 <div className="size-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                                                    {/* Placeholder Avatar */}
-                                                    <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold bg-white border-2 border-gray-100 text-xs">{row.name.split(' ').map(n => n[0]).join('')}</div>
+                                                    {row.profilePicture ? (
+                                                        <img src={row.profilePicture} alt={row.firstName} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold bg-white border-2 border-gray-100 text-xs">
+                                                            {row.firstName[0]}{row.lastName[0]}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-[#111827]">{row.name}</p>
-                                                    <p className="text-xs text-gray-500">{row.role}</p>
+                                                    <p className="font-bold text-[#111827]">{row.firstName} {row.lastName}</p>
+                                                    <p className="text-xs text-gray-500">{row.position}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="py-4">
-                                            <span className={`inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold ${row.dept === 'Creative' ? 'bg-purple-50 text-purple-600' :
-                                                row.dept === 'Engineering' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
-                                                }`}>
-                                                {row.dept}
+                                            <span className="inline-block px-3 py-1 rounded-full text-[10px] md:text-xs font-bold bg-blue-50 text-blue-600">
+                                                {row.department}
                                             </span>
                                         </td>
                                         <td className="py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className={`size-2 rounded-full ${row.statusColor}`}></div>
-                                                <span className="font-bold text-[#111827] text-xs">{row.status}</span>
+                                                <div className={`size-2 rounded-full ${row.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                <span className="font-bold text-[#111827] text-xs">{row.isActive ? 'Active' : 'Suspended'}</span>
                                             </div>
                                         </td>
                                         <td className="py-4 text-right relative">
                                             <button
-                                                onClick={() => toggleActionMenu(row.id)}
+                                                onClick={() => toggleActionMenu(row._id)}
                                                 className="text-gray-400 hover:text-[#3b82f6]"
                                                 title="Options"
                                             >
@@ -348,23 +467,32 @@ export default function DashboardPage() {
                                             </button>
 
                                             {/* Action Dropdown */}
-                                            {openActionMenuId === row.id && (
+                                            {openActionMenuId === row._id && (
                                                 <div className="absolute right-0 top-10 w-32 bg-white rounded-lg shadow-xl border border-gray-100 z-30 animate-scaleUp origin-top-right">
-                                                    <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left">
+                                                    <button
+                                                        onClick={() => router.push(`/profile/${row._id}`)}
+                                                        className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left"
+                                                    >
                                                         <span className="material-symbols-outlined text-[16px]">visibility</span> View Profile
                                                     </button>
-                                                    <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left">
+                                                    <button
+                                                        onClick={() => router.push(`/profile/${row._id}`)}
+                                                        className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 text-left"
+                                                    >
                                                         <span className="material-symbols-outlined text-[16px]">edit</span> Edit Details
                                                     </button>
                                                     <div className="h-px bg-gray-100 my-1"></div>
-                                                    <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 text-left">
-                                                        <span className="material-symbols-outlined text-[16px]">block</span> Suspend
+                                                    <button
+                                                        onClick={() => handleSuspend(row._id)}
+                                                        className="flex items-center gap-2 w-full px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 text-left"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">{row.isActive ? 'block' : 'check_circle'}</span> {row.isActive ? 'Suspend' : 'Activate'}
                                                     </button>
                                                 </div>
                                             )}
                                         </td>
                                     </tr>
-                                ))}
+                                )))}
                             </tbody>
                         </table>
                     </div>
@@ -389,7 +517,7 @@ export default function DashboardPage() {
                                     <span className="material-symbols-outlined text-gray-400">task_alt</span>
                                     New Task
                                 </Link>
-                                <Link href="/reports" className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+                                <Link href="/onboarding/new" className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
                                     <span className="material-symbols-outlined text-gray-400">person_add</span>
                                     Add Report
                                 </Link>

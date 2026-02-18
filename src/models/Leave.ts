@@ -1,72 +1,69 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ILeave extends Document {
-    userId: mongoose.Types.ObjectId;
-    leaveType: 'annual' | 'sick' | 'personal' | 'unpaid' | 'maternity' | 'paternity';
+    tenantId: mongoose.Types.ObjectId;
+    employeeId: mongoose.Types.ObjectId;
+    leaveType: 'Annual' | 'Sick' | 'Unpaid' | 'Maternity' | 'Paternity' | 'Compensatory' | 'Study';
     startDate: Date;
     endDate: Date;
     totalDays: number;
     reason: string;
-    status: 'pending' | 'approved' | 'rejected' | 'cancelled';
-    approverId?: mongoose.Types.ObjectId;
-    approverComments?: string;
-    approvedAt?: Date;
-    attachments?: string[];
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Partially Approved';
+
+    // Approval Workflow
+    approvals?: {
+        level: number; // 1 = Manager, 2 = Director
+        approverId: mongoose.Types.ObjectId;
+        status: 'Pending' | 'Approved' | 'Rejected';
+        comments?: string;
+        actionDate?: Date;
+    }[];
+
+    currentApproverId?: mongoose.Types.ObjectId; // Who needs to action this now.
+    finalStatus?: 'Approved' | 'Rejected' | 'Pending'; // Ultimate result
+
+    // Attachments
+    medicalCertificate?: string;
+
+    cancelReason?: string;
+
     createdAt: Date;
     updatedAt: Date;
 }
 
-const LeaveSchema = new Schema<ILeave>(
-    {
-        userId: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-            required: true,
-        },
-        leaveType: {
-            type: String,
-            enum: ['annual', 'sick', 'personal', 'unpaid', 'maternity', 'paternity'],
-            required: true,
-        },
-        startDate: {
-            type: Date,
-            required: true,
-        },
-        endDate: {
-            type: Date,
-            required: true,
-        },
-        totalDays: {
-            type: Number,
-            required: true,
-        },
-        reason: {
-            type: String,
-            required: true,
-        },
-        status: {
-            type: String,
-            enum: ['pending', 'approved', 'rejected', 'cancelled'],
-            default: 'pending',
-        },
-        approverId: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-        },
-        approverComments: String,
-        approvedAt: Date,
-        attachments: [String],
-    },
-    {
-        timestamps: true,
-    }
-);
+const LeaveSchema = new Schema<ILeave>({
+    tenantId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
+    employeeId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    leaveType: { type: String, required: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
+    totalDays: { type: Number, required: true },
+    reason: String,
 
-// Indexes
-LeaveSchema.index({ userId: 1, createdAt: -1 });
-LeaveSchema.index({ status: 1 });
-LeaveSchema.index({ approverId: 1 });
+    status: {
+        type: String,
+        enum: ['Pending', 'Approved', 'Rejected', 'Cancelled', 'Partially Approved'],
+        default: 'Pending',
+        index: true
+    },
+
+    approvals: [{
+        level: Number,
+        approverId: { type: Schema.Types.ObjectId, ref: 'User' },
+        status: { type: String, enum: ['Pending', 'Approved', 'Rejected'] },
+        comments: String,
+        actionDate: Date
+    }],
+
+    currentApproverId: { type: Schema.Types.ObjectId, ref: 'User' },
+    finalStatus: { type: String, default: 'Pending' },
+    medicalCertificate: String,
+    cancelReason: String,
+}, {
+    timestamps: true
+});
+
+LeaveSchema.index({ currentApproverId: 1, status: 1 }); // For "My Approvals" dashboard
 
 const Leave: Model<ILeave> = mongoose.models.Leave || mongoose.model<ILeave>('Leave', LeaveSchema);
-
 export default Leave;

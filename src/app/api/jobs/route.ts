@@ -1,32 +1,41 @@
+
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import JobPosting, { IJobPosting } from '@/models/JobPosting';
+import Job from '@/models/Job';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function GET(request: Request) {
+export async function GET(req: Request) {
     try {
         await dbConnect();
-        const { searchParams } = new URL(request.url);
-        const includeDrafts = searchParams.get('includeDrafts') === 'true';
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        let query: { status?: string } = { status: 'Open' };
-        if (includeDrafts) {
-            const session = await getServerSession(authOptions);
-            if (session && ['hr', 'admin', 'director'].includes(session.user.role)) {
-                query = {}; // View all
-            }
+        const tenantId = session.user.organizationId;
+        // Tenant fallback for dev (similar to attendance)
+        if (!tenantId) {
+            // If dev env, maybe return empty or handle gracefully
+            return NextResponse.json({ error: 'Tenant ID missing in session' }, { status: 400 });
         }
 
-        const jobs = await JobPosting.find(query).sort({ createdAt: -1 });
+        const { searchParams } = new URL(req.url);
+        const includeDrafts = searchParams.get('includeDrafts') === 'true';
+
+        let query: any = { tenantId, status: 'Open' };
+
+        // HR/Admin can see drafts
+        if (includeDrafts && ['hr', 'admin', 'director'].includes(session.user.role)) {
+            query = { tenantId };
+        }
+
+        const jobs = await Job.find(query).sort({ createdAt: -1 });
         return NextResponse.json(jobs);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: message }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
@@ -35,39 +44,59 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const body = await request.json();
+        const body = await req.json();
+        const tenantId = session.user.organizationId;
+        const userId = session.user.id;
+
+        if (!tenantId) return NextResponse.json({ error: 'Tenant ID missing' }, { status: 400 });
 
         // Basic validation
         if (!body.title || !body.department || !body.description || !body.location) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const newJob = await JobPosting.create({
+        const newJob = new Job({
             ...body,
-            postedBy: session.user.id
-        }) as unknown as IJobPosting;
+            postedBy: userId,
+            tenantId,
+            status: 'Open'
+        });
+        await newJob.save();
 
         // Notify all active users about the new job
-        const User = (await import('@/models/User')).default;
-        const Notification = (await import('@/models/Notification')).default;
+        // (Optional: filter notifications by tenant if notification model supports it)
+        try {
+            const Notification = (await import('@/models/Notification')).default;
+            const User = (await import('@/models/User')).default;
 
-        const allUsers = await User.find({ isActive: true }).select('_id');
-        const notifications = allUsers.map(u => ({
-            userId: u._id,
-            title: 'New Job Opening',
-            message: `A new position for ${newJob.title} (${newJob.department}) has been posted. Refer someone today!`,
-            type: 'info',
-            link: '/careers',
-            read: false
-        }));
+            // Find users in same tenant
+            const users = await User.find({
+                organizationId: tenantId,
+                isActive: true,
+                _id: { $ne: userId } // Don't notify self
+            }).select('_id');
 
-        if (notifications.length > 0) {
-            await Notification.insertMany(notifications);
+            if (users.length > 0) {
+                const notifications = users.map(u => ({
+                    userId: u._id,
+                    tenantId, // Ensure notification has tenant scope if model supports
+                    title: 'New Job Opening',
+                    message: `A new position for ${newJob.title} (${newJob.department}) has been posted. Refer someone today!`,
+                    type: 'info',
+                    link: '/careers', // Or appropriate link
+                    read: false,
+                    createdAt: new Date()
+                }));
+
+                await Notification.insertMany(notifications);
+            }
+        } catch (err) {
+            console.error('Failed to send notifications:', err);
+            // Don't fail the request if notifications fail
         }
 
         return NextResponse.json(newJob, { status: 201 });
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: message }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

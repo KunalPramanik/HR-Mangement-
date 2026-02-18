@@ -1,45 +1,36 @@
 'use client';
 
-import Link from 'next/link';
-
 export default function MilestonesPage() {
     const milestones = [
-        { title: 'New Office Opening', date: 'Jan 15, 2025', desc: 'We are expanding to a new location in downtown.', type: 'announcement', color: 'bg-purple-100 text-purple-600', icon: 'campaign' },
-        { title: 'Project Zenith Launch', date: 'Jan 12, 2025', desc: 'The biggest client project of the year goes live.', type: 'milestone', color: 'bg-blue-100 text-[#3b82f6]', icon: 'rocket_launch' },
-        { title: 'Employee Appreciation Day', date: 'Jan 05, 2025', desc: 'Celebrating our amazing team with a party!', type: 'event', color: 'bg-pink-100 text-pink-600', icon: 'celebration' },
-        { title: 'Q4 Financial Results', date: 'Jan 02, 2025', desc: 'Record breaking performance in the last quarter.', type: 'report', color: 'bg-green-100 text-green-600', icon: 'trending_up' },
-        { title: 'Safety Training Refresh', date: 'Jan 01, 2025', desc: 'Mandatory annual fire safety training.', type: 'compliance', color: 'bg-orange-100 text-orange-600', icon: 'policy' },
-        { title: 'New Hire Orientation', date: 'Dec 28, 2024', desc: 'Welcoming 5 new members to the engineering team.', type: 'hr', color: 'bg-yellow-100 text-yellow-600', icon: 'group_add' },
+        { id: 1, name: 'Sarah Jenkins', event: '5-Year Work Anniversary', date: 'Today', icon: 'celebration', color: 'bg-blue-100 text-blue-600' },
+        { id: 2, name: 'Marco Rossi', event: 'New Employee Onboarding', date: 'Yesterday', icon: 'person_add', color: 'bg-green-100 text-green-600' },
+        { id: 3, name: 'Compliance Update', event: 'Security training completed by 98%', date: '2 days ago', icon: 'verified_user', color: 'bg-yellow-100 text-yellow-600' },
+        { id: 4, name: 'Team Outing', event: 'Quarterly Team Lunch', date: 'Next Friday', icon: 'restaurant', color: 'bg-purple-100 text-purple-600' },
+        { id: 5, name: 'System Maintenance', event: 'Scheduled downtime', date: 'Feb 28', icon: 'build', color: 'bg-gray-100 text-gray-600' },
     ];
 
     return (
-        <div className="flex flex-col gap-8 pb-12 w-full max-w-[1600px] mx-auto min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-4xl font-extrabold text-[#111827] tracking-tight mb-2">Milestones & News</h1>
-                    <p className="text-[#6b7280] font-medium">Keep up to date with the latest company events.</p>
-                </div>
-            </div>
+        <div className="p-8 max-w-4xl mx-auto pb-20">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Milestones & Events</h1>
+            <p className="text-slate-500 mb-8">Recent and upcoming organization highlights.</p>
 
-            {/* List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {milestones.map((m, i) => (
-                    <div key={i} className="soft-card p-6 flex flex-col justify-start h-full hover:-translate-y-1 transition-transform duration-300">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className={`p-3 rounded-xl ${m.color} bg-opacity-20`}>
-                                <span className={`material-symbols-outlined text-[28px]`}>{m.icon}</span>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {milestones.map((item) => (
+                        <div key={item.id} className="p-6 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <div className={`shrink-0 size-12 rounded-full flex items-center justify-center ${item.color}`}>
+                                <span className="material-symbols-outlined text-[24px]">{item.icon}</span>
                             </div>
-                            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full uppercase tracking-wider">{m.date}</span>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                    <h4 className="font-bold text-[#111827] dark:text-white text-lg">{item.name}</h4>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.date}</span>
+                                </div>
+                                <p className="text-slate-500 dark:text-slate-400 mt-1">{item.event}</p>
+                            </div>
                         </div>
-                        <h3 className="font-bold text-lg text-[#111827] mb-2">{m.title}</h3>
-                        <p className="text-sm text-gray-500 mb-4 flex-grow">{m.desc}</p>
-                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                            <span className={`text-xs font-bold uppercase tracking-wider ${m.color} bg-transparent`}>{m.type}</span>
-                            <button className="text-[#3b82f6] text-sm font-bold hover:underline">Read More</button>
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
     );

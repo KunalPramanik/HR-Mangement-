@@ -3,130 +3,171 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { encrypt, decrypt } from '@/lib/encryption';
+import { logAudit } from '@/lib/audit';
+
+// Helper to decrypt a user document
+function decryptUser(userDoc: any) {
+    const user = userDoc.toObject ? userDoc.toObject() : userDoc;
+
+    if (user.salaryInfo) {
+        for (const k in user.salaryInfo) {
+            if (typeof user.salaryInfo[k] === 'string') {
+                user.salaryInfo[k] = decrypt(user.salaryInfo[k]);
+            }
+        }
+    }
+    if (user.bankInfo) {
+        for (const k in user.bankInfo) {
+            user.bankInfo[k] = decrypt(user.bankInfo[k]);
+        }
+    }
+    if (user.statutoryInfo) {
+        for (const k in user.statutoryInfo) {
+            if (k !== 'pfEnabled') user.statutoryInfo[k] = decrypt(user.statutoryInfo[k]);
+        }
+    }
+    if (user.aadhaar) user.aadhaar = decrypt(user.aadhaar);
+
+    return user;
+}
+
+// Helper to encrypt incoming data
+function encryptData(data: any) {
+    const encrypted = { ...data };
+
+    if (data.salaryInfo) {
+        encrypted.salaryInfo = {};
+        for (const k in data.salaryInfo) {
+            encrypted.salaryInfo[k] = encrypt(String(data.salaryInfo[k]));
+        }
+    }
+    if (data.bankInfo) {
+        encrypted.bankInfo = {};
+        for (const k in data.bankInfo) {
+            encrypted.bankInfo[k] = encrypt(String(data.bankInfo[k]));
+        }
+    }
+    if (data.statutoryInfo) {
+        encrypted.statutoryInfo = { ...data.statutoryInfo };
+        for (const k in data.statutoryInfo) {
+            if (k !== 'pfEnabled' && data.statutoryInfo[k]) {
+                encrypted.statutoryInfo[k] = encrypt(String(data.statutoryInfo[k]));
+            }
+        }
+    }
+    if (data.aadhaar) encrypted.aadhaar = encrypt(String(data.aadhaar));
+
+    return encrypted;
+}
 
 export async function GET(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: { id: string } }
 ) {
     try {
         await dbConnect();
-        // Allow anyone authenticated to view basic profile? Or just HR/Manager.
-        // For directory, usually public readable by employees.
-
-        // Next.js 15+ needs await params? No, in 13/14 it's object. 
-        // User env is likely 14 or 15. Safe to assume standard access.
-        // Wait, params is a Promise in latest Next.js.
-        // But usually { params } works in signatures if not strict 15.
-        // I'll check package.json -> next: "16.1.0". !!!
-        // Next.js 16 (Canary? or future). params is PROMISE.
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
-
         const user = await User.findById(id).select('-password').populate('managerId', 'firstName lastName position');
 
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Fetch Direct Reports if this user manages anyone
-        const directReports = await User.find({ managerId: id }).select('firstName lastName position profilePicture');
+        // Access Control
+        const isSelf = session.user.id === id;
+        const isManager = session.user.id === user.managerId?.toString();
+        const isAdmin = ['admin', 'hr', 'director', 'vp', 'cxo', 'cfo', 'cho'].includes(session.user.role);
 
-        const userData = {
-            ...user.toObject(),
-            directReports
-        };
+        let userData = user.toObject();
 
-        return NextResponse.json(userData);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: message }, { status: 500 });
+        if (isSelf || isAdmin) {
+            // Decrypt sensitive data
+            userData = decryptUser(user);
+        } else if (isManager) {
+            // Remove sensitive data
+            delete userData.salaryInfo;
+            delete userData.bankInfo;
+            delete userData.statutoryInfo;
+            delete userData.aadhaar;
+            delete userData.passportDetails;
+        } else {
+            // Public/Colleague View (Basic only)
+            // Even stricter
+            return NextResponse.json({
+                _id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                position: user.position,
+                department: user.department,
+                email: user.email,
+                profilePicture: user.profilePicture
+            });
+        }
+
+        const directReports = await User.find({ managerId: id }).select('firstName lastName position department isActive profilePicture status'); // Status from where? User model doesn't have status, but has 'isActive'. 
+        // Maybe fetch Attendance status? For now just basics.
+
+        return NextResponse.json({ ...userData, directReports });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-
 
 export async function PUT(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: { id: string } }
 ) {
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
-
-        // Only HR or the user themselves (for some fields) can edit?
-        // User requirement: "all database show,,value changes etc"
-        // I'll allow it for now.
-
-        if (!session) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { id } = await params;
-
-        // Security Patch: RBAC Check (Fixing AUTH-02 & MGMT-01)
-        // Only HR, Admin, Directors can edit ANY profile.
-        // Users can only edit their OWN profile (and even then, we might restrict fields in the future).
-        if (session.user.id !== id) {
-            return NextResponse.json({
-                error: 'Forbidden: You can only edit your own profile.'
-            }, { status: 403 });
-        }
-
-
         const data = await request.json();
 
-        // Security: Prevent Privilege Escalation
-        // If the user is NOT an admin/hr/director, they cannot change these fields:
-        // Since only the user can edit their own profile, we MUST restrict sensitive fields
-        delete data.role;
-        delete data.salary; // Assuming salary is stored here or similar fields
-        delete data.department;
-        delete data.position; // Position might be sensitive if tied to bands
-        delete data.employeeId;
-        delete data.managerId;
-        delete data.hrManagerId;
-        // They CAN update: address, phone, bio, pictures, skills, emergencyContact
+        // RBAC Check
+        const isSelf = session.user.id === id;
+        const isAdmin = ['admin', 'hr', 'director', 'vp', 'cxo', 'cho'].includes(session.user.role);
 
-        // Always prevent password update via this route (should use specific change-password route)
-        delete data.password;
+        if (!isSelf && !isAdmin) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        if (!isAdmin) {
+            // Self: Prevent editing core fields
+            const forbidden = ['role', 'roleId', 'salaryInfo', 'department', 'position', 'employeeId', 'managerId', 'dateOfJoining', 'isActive', 'organizationId'];
+            forbidden.forEach(f => delete data[f]);
+        }
+
+        delete data.password; // Never update password here
+
+        // Encrypt Sensitive Data
+        const encryptedData = encryptData(data);
 
         const updatedUser = await User.findByIdAndUpdate(
             id,
-            { $set: data },
+            { $set: encryptedData },
             { new: true, runValidators: true }
         ).select('-password');
 
-        if (!updatedUser) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+        // Log Audit
+        await logAudit({
+            actionType: 'UPDATE',
+            module: 'User',
+            performedBy: session.user.id,
+            targetDocumentId: id,
+            targetUser: id,
+            description: `Updated profile for ${updatedUser?.firstName} ${updatedUser?.lastName}`,
+            tenantId: session.user.organizationId,
+            req: request
+        });
 
         return NextResponse.json(updatedUser);
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: message }, { status: 500 });
-    }
-}
-
-export async function DELETE(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        await dbConnect();
-        const session = await getServerSession(authOptions);
-        if (!session || (session.user.role !== 'hr' && session.user.role !== 'admin')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const { id } = await params;
-        const deletedUser = await User.findByIdAndDelete(id);
-
-        if (!deletedUser) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
-
-        return NextResponse.json({ message: 'User deleted successfully' });
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: message }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

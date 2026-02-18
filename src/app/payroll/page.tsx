@@ -19,10 +19,30 @@ export default function PayrollPage() {
                     <h1 className="text-4xl font-extrabold text-[#111827] tracking-tight mb-2">My Payroll</h1>
                     <p className="text-[#6b7280] font-medium">Access your salary details and tax documents.</p>
                 </div>
-                <button className="px-6 py-3 rounded-full bg-[#10b981] text-white font-bold text-sm shadow-lg shadow-green-500/30 flex items-center gap-2 hover:bg-[#059669] transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">download</span>
-                    Download Tax Report
-                </button>
+                <div className="flex items-center gap-3">
+                    {session?.user && ['admin', 'hr', 'cfo', 'director'].includes(session.user.role) && (
+                        <>
+                            <button
+                                onClick={() => window.location.href = '/payroll/run'}
+                                className="px-6 py-3 rounded-full bg-blue-100 text-blue-700 font-bold text-sm shadow-sm flex items-center gap-2 hover:bg-blue-200 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                                Run Payroll
+                            </button>
+                            <button
+                                onClick={() => window.location.href = '/payroll/settings'}
+                                className="px-6 py-3 rounded-full bg-gray-100 text-gray-700 font-bold text-sm shadow-sm flex items-center gap-2 hover:bg-gray-200 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">settings</span>
+                                Settings
+                            </button>
+                        </>
+                    )}
+                    <button className="px-6 py-3 rounded-full bg-[#10b981] text-white font-bold text-sm shadow-lg shadow-green-500/30 flex items-center gap-2 hover:bg-[#059669] transition-colors">
+                        <span className="material-symbols-outlined text-[20px]">download</span>
+                        Download Tax Report
+                    </button>
+                </div>
             </div>
 
             {/* Salary Summary Cards */}

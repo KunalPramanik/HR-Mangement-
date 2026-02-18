@@ -16,6 +16,7 @@ export default function Sidebar() {
         { name: 'Inbox', href: '/messages', icon: 'mail', roles: [] },
         // Management Links
         { name: 'Directory', href: '/directory', icon: 'groups', roles: [] },
+        { name: 'Org Chart', href: '/hr/org-chart', icon: 'account_tree', roles: ['director', 'cxo', 'cho', 'admin', 'hr', 'manager'] },
         { name: 'Reports', href: '/hr/reports', icon: 'analytics', roles: ['director', 'cxo', 'cho', 'admin', 'hr'] },
         // General Links
         { name: 'Policies', href: '/policies', icon: 'policy', roles: [] },

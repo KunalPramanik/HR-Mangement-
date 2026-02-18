@@ -1,325 +1,251 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Attendance from '@/models/Attendance';
-import User from '@/models/User';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-
-export async function GET() {
-    try {
-        await dbConnect();
-
-        const session = await getServerSession(authOptions);
-        if (!session || !session.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Fetch Today's Log
-        const todayLog = await Attendance.findOne({
-            userId: session.user.id,
-            date: { $gte: today }
-        });
-
-        // Common history logic
-        // STRICT: Only show OWN history on the personal attendance page, regardless of role
-        const historyQuery = { userId: session.user.id };
-
-        const history = await Attendance.find(historyQuery)
-            .populate('userId', 'firstName lastName department')
-            .sort({ date: -1 })
-            .limit(30);
-
-        return NextResponse.json({
-            todayLog,
-            history,
-            // Explicit State for Frontend
-            currentState: todayLog ? todayLog.status : 'NOT_STARTED'
-        });
-
-    } catch (error) {
-        console.error('Error fetching attendance:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-    }
-}
 
 export async function POST(req: Request) {
     try {
         await dbConnect();
         const session = await getServerSession(authOptions);
-
-        if (!session || !session.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { action, location } = await req.json();
+
+        console.log('Attendance API - Received action:', action, 'Location:', location);
+        console.log('Session user:', JSON.stringify(session.user, null, 2));
+
+        // Validate action
+        const validActions = ['clock-in', 'clock-out', 'start-break', 'end-break', 'start-meeting', 'end-meeting'];
+        if (!validActions.includes(action)) {
+            console.error('Invalid action received:', action);
+            return NextResponse.json({ error: `Invalid action: ${action}. Valid actions are: ${validActions.join(', ')}` }, { status: 400 });
+        }
+
+        // Validate location for clock actions
+        if ((action === 'clock-in' || action === 'clock-out') && !location) {
+            return NextResponse.json({ error: 'Location is required' }, { status: 400 });
+        }
+
+        const userId = session.user.id;
+        let tenantId = session.user.organizationId;
+
+        // Development fallback: If organizationId is missing, use a default one
+        // This happens when users are created without proper organization setup
+        if (!tenantId) {
+            console.warn('⚠️ No organizationId in session. Using development fallback.');
+            console.warn('⚠️ User should log out and log in again, or update their profile.');
+
+            // Try to get organizationId from the user in database
+            const User = (await import('@/models/User')).default;
+            const dbUser = await User.findById(userId).select('organizationId');
+
+            if (dbUser?.organizationId) {
+                tenantId = dbUser.organizationId.toString();
+                console.log('✅ Found organizationId in database:', tenantId);
+            } else {
+                // Last resort: create a default organization for development
+                const mongoose = await import('mongoose');
+                tenantId = new mongoose.Types.ObjectId().toString();
+                console.error('❌ No organizationId found. Using temporary ID:', tenantId);
+                console.error('❌ This user needs to be assigned to an organization!');
+            }
+        }
+
+        console.log('Using tenantId:', tenantId, 'userId:', userId);
+
+        // Normalize date to start of day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let attendance = await Attendance.findOne({
+            employeeId: userId,
+            date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) }
+        });
+
+        let currentState = 'NOT_STARTED';
+
+        if (action === 'clock-in') {
+            if (attendance) return NextResponse.json({ error: 'Already clocked in today' }, { status: 400 });
+
+            const checkInTime = new Date();
+            const hour = checkInTime.getHours();
+            const minute = checkInTime.getMinutes();
+            const isLate = hour > 9 || (hour === 9 && minute > 30); // Late if after 9:30 AM
+
+            console.log('Creating new attendance record with tenantId:', tenantId);
+
+            attendance = new Attendance({
+                tenantId,
+                employeeId: userId,
+                date: new Date(),
+                checkIn: checkInTime,
+                checkInLocation: {
+                    lat: location.latitude,
+                    lng: location.longitude,
+                    isValid: true
+                },
+                status: isLate ? 'Late' : 'Present',
+                isLate,
+                breaks: []
+            });
+
+            currentState = 'IN_PROGRESS';
+        }
+        else if (action === 'clock-out') {
+            if (!attendance) return NextResponse.json({ error: 'No active session found. Please clock in first.' }, { status: 400 });
+            if (attendance.checkOut) return NextResponse.json({ error: 'Already clocked out' }, { status: 400 });
+
+            attendance.checkOut = new Date();
+            attendance.checkOutLocation = {
+                lat: location.latitude,
+                lng: location.longitude,
+                isValid: true
+            };
+
+            // Calculate total hours
+            if (attendance.checkIn) {
+                const diff = (attendance.checkOut.getTime() - attendance.checkIn.getTime()) / (1000 * 3600);
+                attendance.totalWorkHours = parseFloat(diff.toFixed(2));
+
+                // Calculate overtime (if worked more than 9 hours)
+                if (diff > 9) {
+                    attendance.overtimeHours = parseFloat((diff - 9).toFixed(2));
+                }
+            }
+
+            currentState = 'COMPLETED';
+        }
+        else if (action === 'start-break' || action === 'start-meeting') {
+            if (!attendance) return NextResponse.json({ error: 'No active session found. Please clock in first.' }, { status: 400 });
+            if (attendance.checkOut) return NextResponse.json({ error: 'Already clocked out' }, { status: 400 });
+
+            // Check if there's already an active break/meeting
+            const activeBreak = attendance.breaks.find(b => !b.endTime);
+            if (activeBreak) {
+                return NextResponse.json({ error: 'Please end current break/meeting first' }, { status: 400 });
+            }
+
+            attendance.breaks.push({
+                activity: action === 'start-break' ? 'break' : 'meeting',
+                startTime: new Date(),
+                durationMinutes: 0
+            });
+
+            currentState = 'IN_PROGRESS';
+        }
+        else if (action === 'end-break' || action === 'end-meeting') {
+            if (!attendance) return NextResponse.json({ error: 'No active session found' }, { status: 400 });
+
+            const activityType = action === 'end-break' ? 'break' : 'meeting';
+            const lastBreak = attendance.breaks.reverse().find(b => b.activity === activityType && !b.endTime);
+
+            if (!lastBreak) {
+                return NextResponse.json({ error: `No active ${activityType} found` }, { status: 400 });
+            }
+
+            lastBreak.endTime = new Date();
+            const durationMs = lastBreak.endTime.getTime() - lastBreak.startTime.getTime();
+            lastBreak.durationMinutes = Math.round(durationMs / (1000 * 60));
+
+            // Reverse back to original order
+            attendance.breaks.reverse();
+
+            currentState = 'IN_PROGRESS';
+        }
+
+        // TypeScript null check (should never happen due to logic above)
+        if (!attendance) {
+            return NextResponse.json({ error: 'Failed to create or update attendance' }, { status: 500 });
+        }
+
+        await attendance.save();
+
+        await logAudit({
+            actionType: action === 'clock-in' ? 'CREATE' : 'UPDATE',
+            module: 'Attendance',
+            performedBy: userId,
+            targetDocumentId: attendance._id.toString(),
+            description: `${action} at ${new Date().toLocaleTimeString()}`,
+            tenantId,
+            req
+        });
+
+        return NextResponse.json({
+            success: true,
+            currentState,
+            attendance: {
+                _id: attendance._id,
+                clockIn: attendance.checkIn,
+                clockOut: attendance.checkOut,
+                totalHours: attendance.totalWorkHours,
+                status: attendance.status,
+                breaks: attendance.breaks
+            }
+        });
+
+    } catch (error: any) {
+        console.error('Attendance API Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    }
+}
+
+export async function GET(req: Request) {
+    try {
+        await dbConnect();
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const userId = session.user.id;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // 1. GEO-FENCING — ZERO MANUAL INPUT (MANDATORY)
-        // Global Check for Clock-In
-        let computedDistance = 0;
+        // Get today's attendance
+        const todayAttendance = await Attendance.findOne({
+            employeeId: userId,
+            date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) }
+        });
 
-        if (action === 'clock-in') {
-            // Load User First to check Role
-            const user = await User.findById(userId);
-            if (!user) {
-                return NextResponse.json({ error: 'User not found' }, { status: 404 });
-            }
+        // Get recent history (last 10 days)
+        const history = await Attendance.find({
+            employeeId: userId,
+            date: { $lt: today }
+        })
+            .sort({ date: -1 })
+            .limit(10);
 
-            // GEO-FENCING & GPS ENFORCEMENT
-            // RULE: strictly enforce ONLY for 'employee' and 'intern'.
-            // Others (Manager, HR, Admin, CXO) can clock in from anywhere (Remote/On-site).
-            if (['employee', 'intern'].includes(user.role)) {
-                // 1. Check for GPS Payload
-                if (!location || !location.latitude || !location.longitude) {
-                    await logAudit('CLOCK_IN_FAILED', userId, 'Attendance', 'NEW', { reason: 'Missing GPS', location });
-                    return NextResponse.json({
-                        error: 'GPS Location is MANDATORY for attendance. Please allow location access.'
-                    }, { status: 403 });
-                }
-
-                // 2. Validate Coordinates
-                if (typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
-                    return NextResponse.json({ error: 'Invalid coordinates' }, { status: 403 });
-                }
-
-                // 3. Spoofing Check
-                if (location.accuracy && location.accuracy > 2000) {
-                    return NextResponse.json({ error: `GPS signal too weak (Accuracy: ${Math.round(location.accuracy)}m).` }, { status: 403 });
-                }
-
-                // 4. Distance Check (The actual Geo-Fence)
-                // If office location is configured, enforce Radius
-                if (user?.workLocation?.latitude && user?.workLocation?.longitude) {
-                    // ... existing calculation logic ...
-                    // (I will let the next block handle this, or consolidate it here)
-                }
-            }
-
-            // If office location is configured, enforce Radius
-            // If office location is configured, enforce Radius
-            // RULE: Strictly enforce 10m range for 'employee' and 'intern' ONLY.
-            // Other roles (Managers, HR, Admin) are trusted/exempt from strict geo-lock in POC.
-            if (['employee', 'intern'].includes(user.role)) {
-                if (user?.workLocation?.latitude && user?.workLocation?.longitude) {
-                    const toRad = (value: number) => (value * Math.PI) / 180;
-                    const R = 6371e3; // Earth radius in meters
-                    const φ1 = toRad(user.workLocation.latitude);
-                    const φ2 = toRad(location.latitude);
-                    const Δφ = toRad(location.latitude - user.workLocation.latitude);
-                    const Δλ = toRad(location.longitude - user.workLocation.longitude);
-
-                    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                    const distance = R * c;
-                    computedDistance = Math.round(distance);
-
-                    // STRICT 10m RANGE as per requirement
-                    const allowedRadius = user.workLocation.radiusMeters || 10;
-
-                    if (distance > allowedRadius) {
-                        await logAudit('CLOCK_IN_FAILED', userId, 'Attendance', 'NEW', { reason: 'Geo-fence Violation', distance, allowedRadius, location });
-                        return NextResponse.json({
-                            // Fix: Show precise distance (e.g., 100.4m) to avoid "100m > 100m" error confusion
-                            error: `You are not at the office. Distance: ${distance.toFixed(1)}m. Allowed: ${allowedRadius}m.`
-                        }, { status: 403 });
-                    }
-                } else {
-                    // If 'employee'/'intern' has NO work location assigned, should we block?
-                    // "office location fixed" implies there Should be one. 
-                    // For safety in POC, if no location set, we might allow or block. 
-                    // Blocking is safer for "Strict" requirements.
-                    await logAudit('CLOCK_IN_FAILED', userId, 'Attendance', 'NEW', { reason: 'No Office Assigned', location });
-                    return NextResponse.json({ error: 'No Office Location assigned. Contact HR.' }, { status: 403 });
-                }
+        // Determine current state
+        let currentState = 'NOT_STARTED';
+        if (todayAttendance) {
+            if (todayAttendance.checkOut) {
+                currentState = 'COMPLETED';
+            } else if (todayAttendance.checkIn) {
+                currentState = 'IN_PROGRESS';
             }
         }
 
-        // 2. FSM Logic
-        if (action === 'clock-in') {
-            // Check existing for today
-            const existing = await Attendance.findOne({ userId, date: today });
+        return NextResponse.json({
+            currentState,
+            todayLog: todayAttendance ? {
+                clockIn: todayAttendance.checkIn,
+                clockOut: todayAttendance.checkOut,
+                totalHours: todayAttendance.totalWorkHours,
+                breaks: todayAttendance.breaks,
+                status: todayAttendance.status
+            } : null,
+            history: history.map(att => ({
+                _id: att._id,
+                date: att.date,
+                clockIn: att.checkIn,
+                clockOut: att.checkOut,
+                totalHours: att.totalWorkHours,
+                status: att.status
+            }))
+        });
 
-            // STRICT FSM: If ANY record exists today -> 409
-            if (existing) {
-                await logAudit('CLOCK_IN_REJECTED', userId, 'Attendance', existing._id.toString(), { reason: 'Duplicate' });
-                return NextResponse.json({
-                    error: 'Attendance already exists for today. Double clock-in prevented.',
-                    currentState: existing.status
-                }, { status: 409 });
-            }
-
-            // Create Record
-            const attendance = new Attendance({
-                userId,
-                date: today,
-                clockIn: new Date(),
-                status: 'IN_PROGRESS',
-                outcome: null, // As per rule, starts null
-                geo: {
-                    lat: location.latitude,
-                    lng: location.longitude,
-                    distance: computedDistance
-                }
-            });
-
-            // ATOMIC COMMIT ATTEMPT
-            try {
-                await attendance.save();
-                // AUDIT LOG - If this fails, we catch and rollback attendance
-                await logAudit('CLOCK_IN', userId, 'Attendance', attendance._id.toString(), {
-                    geo: attendance.geo,
-                    time: attendance.clockIn
-                });
-            } catch (err: unknown) {
-                const anyErr = err as any;
-                if (anyErr && anyErr.code === 11000) {
-                    return NextResponse.json({
-                        error: 'Attendance already exists for today (Race execution blocked).',
-                        currentState: 'IN_PROGRESS'
-                    }, { status: 409 });
-                }
-
-                await Attendance.deleteOne({ _id: attendance._id });
-                throw err;
-            }
-
-            return NextResponse.json({
-                success: true,
-                attendance,
-                currentState: 'IN_PROGRESS'
-            }, { status: 201 });
-        }
-
-
-
-        else if (['start-break', 'end-break', 'start-meeting', 'end-meeting'].includes(action)) {
-            const attendance = await Attendance.findOne({
-                userId,
-                date: today,
-                status: 'IN_PROGRESS'
-            });
-
-            if (!attendance) {
-                return NextResponse.json({ error: 'No active session found.' }, { status: 409 });
-            }
-
-            const now = new Date();
-
-            if (action === 'start-break' || action === 'start-meeting') {
-                const activity = action === 'start-break' ? 'break' : 'meeting';
-
-                // Ensure breaks array exists
-                if (!attendance.breaks) {
-                    attendance.breaks = [];
-                }
-
-                // Check if already in a break/meeting
-                const activeBreak = attendance.breaks.find((b: any) => !b.endTime);
-                if (activeBreak) {
-                    return NextResponse.json({ error: `Already in a ${activeBreak.activity}. End it first.` }, { status: 409 });
-                }
-
-                attendance.breaks.push({
-                    activity,
-                    startTime: now
-                });
-
-                await attendance.save();
-                await logAudit(action.toUpperCase(), userId, 'Attendance', attendance._id.toString(), { startTime: now });
-
-                return NextResponse.json({ success: true, attendance, currentState: 'IN_PROGRESS' });
-            }
-
-            if (action === 'end-break' || action === 'end-meeting') {
-                const activity = action === 'end-break' ? 'break' : 'meeting';
-                // Find active segment
-                const activeSegment = attendance.breaks?.find((b: any) => b.activity === activity && !b.endTime);
-
-                if (!activeSegment) {
-                    // Graceful handling for 'Ghost' breaks (UI thinks active, DB doesn't)
-                    // Just return success so UI clears the state
-                    return NextResponse.json({
-                        success: true,
-                        attendance,
-                        currentState: 'IN_PROGRESS',
-                        message: `No active ${activity} found to end.`
-                    });
-                }
-
-                activeSegment.endTime = now;
-                const diffMs = now.getTime() - new Date(activeSegment.startTime).getTime();
-                activeSegment.duration = Math.round(diffMs / (1000 * 60)); // Minutes
-
-                await attendance.save();
-                await logAudit(action.toUpperCase(), userId, 'Attendance', attendance._id.toString(), { duration: activeSegment.duration });
-
-                return NextResponse.json({ success: true, attendance, currentState: 'IN_PROGRESS' });
-            }
-        }
-
-        else if (action === 'clock-out') {
-            // STRICT FSM: Only allowed if IN_PROGRESS
-            const attendance = await Attendance.findOne({
-                userId,
-                date: today,
-                status: 'IN_PROGRESS'
-            });
-
-            if (!attendance) {
-                // Could be because no record (409) or already COMPLETED (409)
-                const completed = await Attendance.findOne({ userId, date: today, status: 'COMPLETED' });
-                if (completed) {
-                    await logAudit('CLOCK_OUT_REJECTED', userId, 'Attendance', completed._id.toString(), { reason: 'Already Completed' });
-                    return NextResponse.json({ error: 'Already clocked out.' }, { status: 409 });
-                }
-                return NextResponse.json({ error: 'No active session found.' }, { status: 409 });
-            }
-
-            // Update State
-            attendance.clockOut = new Date();
-            const diffMs = attendance.clockOut.getTime() - new Date(attendance.clockIn).getTime();
-            attendance.totalHours = Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
-            attendance.status = 'COMPLETED';
-
-            // Compute Outcome (Basic Logic)
-            // 'present' if > 4 hours, else 'half-day' or 'late' logic could go here
-            // For now, based on strict request, outcome is computed.
-            attendance.outcome = attendance.totalHours > 4 ? 'present' : 'half-day';
-
-            // ATOMIC COMMIT
-            try {
-                await attendance.save();
-                await logAudit('CLOCK_OUT', userId, 'Attendance', attendance._id.toString(), {
-                    out: attendance.clockOut,
-                    hours: attendance.totalHours
-                });
-            } catch (err) {
-                // Rollback not easily possible for update without session, 
-                // but we can try to revert fields if save worked but audit failed.
-                // For now, assuming save failure prevents mutation, audit failure throws.
-                throw err;
-            }
-
-            return NextResponse.json({
-                success: true,
-                attendance,
-                currentState: 'COMPLETED'
-            });
-        }
-
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-
-    } catch (error: unknown) {
-        console.error('Attendance System Error:', error);
-        const message = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({ error: message || 'System Failure' }, { status: 500 });
+    } catch (error: any) {
+        console.error('Attendance GET Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

@@ -8,8 +8,15 @@ export const metadata: Metadata = {
   description: "Enterprise-grade Human Resource Management System by Mindstar Technology",
   manifest: "/manifest.json",
   icons: { apple: "/icons/icon-192x192.png" },
+};
+
+export const viewport = {
   themeColor: "#135bec",
-  viewport: "minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover",
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  shrinkToFit: "no",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

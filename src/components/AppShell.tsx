@@ -13,7 +13,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen w-full bg-background-light relative">
             <PrismDock />
-            <main className="w-full min-h-screen pt-28 pb-12 px-6 max-w-7xl mx-auto">
+            <main className="w-full min-h-screen pt-28 md:pt-28 pb-24 md:pb-12 px-4 md:px-6 max-w-7xl mx-auto">
                 {children}
             </main>
         </div>
